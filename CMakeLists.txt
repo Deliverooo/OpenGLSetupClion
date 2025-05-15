@@ -3,7 +3,15 @@ project(OpenGLSetup)
 
 set(CMAKE_CXX_STANDARD 11)
 
-set(SOURCE_FILES main.cpp GLAD/src/glad.c)
+set(SOURCE_FILES main.cpp GLAD/src/glad.c
+        "header files/chunk.cpp"
+        "header files/chunk.h"
+        "header files/shader.cpp"
+        "header files/shader.h"
+        "header files/texture.cpp"
+        "header files/texture.h"
+        "header files/stb_image.h"
+        "header files/stb_image.cpp")
 
 set(dir ${CMAKE_CURRENT_SOURCE_DIR})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${dir}/build)
