@@ -11,6 +11,8 @@
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
+void mouse_callback(GLFWwindow* window, double xpos, double ypos);
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 
 // settings
 const GLuint WIDTH = 800;
@@ -30,6 +32,7 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
+
     // glfw window creation
     // --------------------
     GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "LearnOpenGL", NULL, NULL);
@@ -41,6 +44,7 @@ int main()
     }
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwSetCursorPosCallback(window, mouse_callback);
 
     // glad: load all OpenGL function pointers
     // ---------------------------------------
@@ -120,17 +124,20 @@ int main()
         -0.5f,  0.5f, -0.5f,0.0f, 1.0f, 0.0f, 0.0f, 1.0f
     };
 
-    GLuint indices[] = {
-        0, 1, 3, // first triangle
-        1, 2, 3  // second triangle
+    glm::vec3 cubePositions[] = {
+        glm::vec3(0.0f,  0.0f,  0.0f),
+        glm::vec3(1.0f,  0.0f,  0.0f),
+        glm::vec3(-1.0f,  0.0f,  0.0f),
+        glm::vec3(-1.0f,  1.0f,  0.0f),
+        glm::vec3( 0.0f,  1.0f,  0.0f),
+        glm::vec3( 1.0f,  1.0f,  0.0f),
     };
 
-    unsigned int VBO, VAO, EBO;
+    unsigned int VBO, VAO;
 
     //generates the vertex arrays and buffers
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
-    glGenBuffers(1, &EBO);
 
     //binds the vertex array, so it is the one that is currently active
     glBindVertexArray(VAO);
@@ -138,9 +145,6 @@ int main()
     //binds the buffer so we can store data in it
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
     // position attribute
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
@@ -165,7 +169,6 @@ int main()
 
     projection = glm::perspective(glm::radians(FOV), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f);
     view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
-    model = glm::rotate(model, glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f));
 
     shader.uploadUniformMatrix4f("projection", projection);
 
@@ -176,35 +179,58 @@ int main()
     // You can unbind the VAO afterward so other VAO calls won't accidentally modify this VAO, but this rarely happens. Modifying other
     // VAOs requires a call to glBindVertexArray anyway so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
     // glBindVertexArray(0);
-
+    glEnable(GL_DEPTH_TEST);
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window))
     {
         currentFrame = glfwGetTime();
-
-        // input
-        // -----
         processInput(window);
+        glClearColor(0.0f, 0.61f, 0.81f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // render
-        // ------
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
-
-
-        // render the triangle
         shader.use();
-
         glBindTexture(GL_TEXTURE_2D, texture);
         glBindVertexArray(VAO);
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT,nullptr);
-
-        model = glm::rotate(model, glm::radians((float)deltaTime * 40), glm::vec3(1.0f, 1.0f, 0.0f));
-
         projection = glm::perspective(glm::radians(45.0f), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f);
 
+
+        for (unsigned int i = 0; i < 8; i++) {
+            for (unsigned int j = 0; j < 8; j++) {
+                glm::mat4 model = glm::mat4(1.0f);
+                model = glm::translate(model, glm::vec3(i, -1, j));
+                shader.uploadUniformMatrix4f("model", model);
+
+                glDrawArrays(GL_TRIANGLES, 0, 36);
+            }
+        }
+
+
+
+        if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
+            view = glm::rotate(view, glm::radians((float)45 * (float)deltaTime), glm::vec3(0.0f, 0.0f, 1.0f));
+        } else if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+            view = glm::rotate(view, glm::radians((float)-45 * (float)deltaTime), glm::vec3(1.0f, 0.0f, 1.0f));
+        } else if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
+            view = glm::rotate(view, glm::radians((float)45 * (float)deltaTime), glm::vec3(0.0f, 1.0f, 0.0f));
+        } else if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
+            view = glm::rotate(view, glm::radians((float)-45 * (float)deltaTime), glm::vec3(1.0f, 1.0f, 0.0f));
+        } else if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+            view = glm::translate(view, glm::vec3(0.0f, 0.05f, 0.0f));
+        } else if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+            view = glm::translate(view, glm::vec3(0.0f, -0.05f, 0.0f));
+        }
+
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+            view = glm::translate(view, glm::vec3(0.0f, 0.0f, 8.0f * deltaTime));
+        } else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+            view = glm::translate(view, glm::vec3(0.0f, 0.0f, -8.0f * deltaTime));
+        } else if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+            view = glm::translate(view, glm::vec3(8.0f * deltaTime, 0.0f, 0.0f));
+        } else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+            view = glm::translate(view, glm::vec3(-8.0f * deltaTime, 0.0f, 0.0f));
+        }
         shader.uploadUniformMatrix4f("projection", projection);
         shader.uploadUniformMatrix4f("view", view);
         shader.uploadUniformMatrix4f("model", model);
@@ -247,4 +273,13 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
     // height will be significantly larger than specified on retina displays.
     glViewport(0, 0, width, height);
     std::cout << "Frame buffer size: " << width << ", " << height << std::endl;
+}
+void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
+    glfwGetCursorPos(window, &xpos, &ypos);
+
+    std::cout << "Mouse position: " << xpos << ", " << ypos << std::endl;
+}
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
+
+    std::cout << "Mouse scroll: " << xoffset << ", " << yoffset << std::endl;
 }
