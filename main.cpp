@@ -23,6 +23,13 @@ double deltaTime = 0.0f;
 double lastFrame = 0.0f;
 double currentFrame = 0.0f;
 
+
+glm::vec3 cameraPosition = glm::vec3(0.0f, 0.0f, 3.0f);
+glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+
+float yaw = -90.0f;
+
 int main()
 {
     // glfw: initialize and configure
@@ -45,6 +52,8 @@ int main()
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetCursorPosCallback(window, mouse_callback);
+
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     // glad: load all OpenGL function pointers
     // ---------------------------------------
@@ -185,20 +194,13 @@ int main()
 
     glUniform1i(glGetUniformLocation(shader.ID, "texture1"), 0);
 
-    //creates a transformation matrix to transform the object
+    float mixFactor = 0.5f;
 
-    glm::mat4 model         = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
-    glm::mat4 view          = glm::mat4(1.0f);
-    glm::mat4 projection    = glm::mat4(1.0f);
-
-    projection = glm::perspective(glm::radians(FOV), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f);
-    view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
-
+    glm::mat4 projection = glm::mat4(1.0f);
+    projection = glm::perspective(glm::radians(FOV), (float) WIDTH / (float) HEIGHT, 0.1f, 100.0f);
     shader.uploadUniformMatrix4f("projection", projection);
 
-    shader.uploadUniformMatrix4f("view", view);
-
-    shader.uploadUniformMatrix4f("model", model);
+    shader.setFloat("mixFactor", mixFactor);
 
     // You can unbind the VAO afterward so other VAO calls won't accidentally modify this VAO, but this rarely happens. Modifying other
     // VAOs requires a call to glBindVertexArray anyway so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
@@ -221,47 +223,29 @@ int main()
         glBindTexture(GL_TEXTURE_2D, texture2);
         shader.use();
 
-        projection = glm::perspective(glm::radians(45.0f), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f);
+        glm::mat4 view;
+        view = glm::lookAt(cameraPosition, cameraPosition + cameraFront, cameraUp);
 
+        shader.uploadUniformMatrix4f("view", view);
 
-        for (unsigned int i = 0; i < 12; i++) {
+        for (unsigned int i = 0; i < 8; i++) {
             for (unsigned int j = 0; j < 8; j++) {
+
                 glm::mat4 model = glm::mat4(1.0f);
                 model = glm::translate(model, glm::vec3(i, -1, j));
+
+                if (i % 2 == 0) {
+                    float angle = glfwGetTime() * 10.0f;
+
+                    model = glm::rotate(model, glm::radians(angle), glm::vec3(1, 0, 0));
+                    shader.setFloat("mixFactor", glm::clamp(sin(glfwGetTime())));
+                }
+
                 shader.uploadUniformMatrix4f("model", model);
 
                 glDrawArrays(GL_TRIANGLES, 0, 36);
             }
         }
-
-
-
-        if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS) {
-            view = glm::rotate(view, glm::radians((float)45 * (float)deltaTime), glm::vec3(0.0f, 0.0f, 1.0f));
-        } else if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
-            view = glm::rotate(view, glm::radians((float)-45 * (float)deltaTime), glm::vec3(1.0f, 0.0f, 1.0f));
-        } else if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS) {
-            view = glm::rotate(view, glm::radians((float)45 * (float)deltaTime), glm::vec3(0.0f, 1.0f, 0.0f));
-        } else if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS) {
-            view = glm::rotate(view, glm::radians((float)-45 * (float)deltaTime), glm::vec3(1.0f, 1.0f, 0.0f));
-        } else if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-            view = glm::translate(view, glm::vec3(0.0f, 0.05f, 0.0f));
-        } else if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-            view = glm::translate(view, glm::vec3(0.0f, -0.05f, 0.0f));
-        }
-
-        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-            view = glm::translate(view, glm::vec3(0.0f, 0.0f, 8.0f * deltaTime));
-        } else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-            view = glm::translate(view, glm::vec3(0.0f, 0.0f, -8.0f * deltaTime));
-        } else if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-            view = glm::translate(view, glm::vec3(8.0f * deltaTime, 0.0f, 0.0f));
-        } else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-            view = glm::translate(view, glm::vec3(-8.0f * deltaTime, 0.0f, 0.0f));
-        }
-        shader.uploadUniformMatrix4f("projection", projection);
-        shader.uploadUniformMatrix4f("view", view);
-        shader.uploadUniformMatrix4f("model", model);
 
         glBindVertexArray(VAO);
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
@@ -292,6 +276,27 @@ void processInput(GLFWwindow *window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
+
+    float cameraSpeed = 4.0f * deltaTime;
+
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+        cameraPosition += cameraFront * cameraSpeed;
+    }
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+        cameraPosition -= cameraFront * cameraSpeed;
+    }
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+        cameraPosition += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+    }
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+        cameraPosition -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+    }
+    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+        cameraPosition -= cameraUp * cameraSpeed;
+    }
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+        cameraPosition += cameraUp * cameraSpeed;
+    }
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
