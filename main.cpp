@@ -15,20 +15,27 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 
 // settings
-const GLuint WIDTH = 800;
-const GLuint HEIGHT = 600;
-const GLfloat FOV = 45.0f;
+const GLuint WIDTH = 1280;
+const GLuint HEIGHT = 720;
+GLfloat FOV = 45.0f;
 
 double deltaTime = 0.0f;
 double lastFrame = 0.0f;
 double currentFrame = 0.0f;
 
+const float sensitivity = 0.08f;
+
+float lastScroll = 0;
+float lastX = WIDTH / 2.0f;
+float lastY = HEIGHT / 2.0f;
+bool firstMouse = true;
 
 glm::vec3 cameraPosition = glm::vec3(0.0f, 0.0f, 3.0f);
 glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
 float yaw = -90.0f;
+float pitch = 0.0f;
 
 int main()
 {
@@ -52,9 +59,11 @@ int main()
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetScrollCallback(window, scroll_callback);
 
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
+    glfwSwapInterval(1);
     // glad: load all OpenGL function pointers
     // ---------------------------------------
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
@@ -81,9 +90,9 @@ int main()
 
     int width, height, nrChannels;
     stbi_set_flip_vertically_on_load(true);
-    unsigned char *data = stbi_load("C:/Users/oocon/CLionProjects/Engine3d/resources/textures/Loooooowwww.png", &width, &height, &nrChannels, 0);
+    unsigned char *data = stbi_load("C:/Users/oocon/CLionProjects/Engine3d/resources/textures/One_Leg_Bird.png", &width, &height, &nrChannels, 0);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
     glGenerateMipmap(GL_TEXTURE_2D);
 
     stbi_image_free(data);
@@ -198,6 +207,7 @@ int main()
 
     glm::mat4 projection = glm::mat4(1.0f);
     projection = glm::perspective(glm::radians(FOV), (float) WIDTH / (float) HEIGHT, 0.1f, 100.0f);
+
     shader.uploadUniformMatrix4f("projection", projection);
 
     shader.setFloat("mixFactor", mixFactor);
@@ -222,7 +232,7 @@ int main()
         glBindTexture(GL_TEXTURE_2D, texture2);
         glBindTexture(GL_TEXTURE_2D, texture2);
         shader.use();
-
+        projection = glm::perspective(glm::radians(FOV), (float) WIDTH / (float) HEIGHT, 0.1f, 100.0f);
         glm::mat4 view;
         view = glm::lookAt(cameraPosition, cameraPosition + cameraFront, cameraUp);
 
@@ -274,11 +284,12 @@ int main()
 // ---------------------------------------------------------------------------------------------------------
 void processInput(GLFWwindow *window)
 {
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);
+    }
 
-    float cameraSpeed = 4.0f * deltaTime;
-
+    float cameraSpeed = 4.0f * (float)deltaTime;
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
         cameraPosition += cameraFront * cameraSpeed;
     }
@@ -309,11 +320,40 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
     std::cout << "Frame buffer size: " << width << ", " << height << std::endl;
 }
 void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
-    glfwGetCursorPos(window, &xpos, &ypos);
 
-    std::cout << "Mouse position: " << xpos << ", " << ypos << std::endl;
+    if (firstMouse) {
+        lastX = xpos;
+        lastY = ypos;
+        firstMouse = false;
+    }
+    float mouseDx = (float)xpos - lastX;
+    float mouseDy = (float)lastY - ypos;
+    lastX = xpos;
+    lastY = ypos;
+
+    mouseDx *= sensitivity;
+    mouseDy *= sensitivity;
+
+    yaw += mouseDx;
+    pitch += mouseDy;
+
+    if (pitch > 89.0f) {
+        pitch = 89.0f;
+    }
+    if (pitch < -89.0f) {
+        pitch = -89.0f;
+    }
+
+    glm::vec3 cameraDirection;
+    cameraDirection.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
+    cameraDirection.y = sin(glm::radians(pitch));
+    cameraDirection.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
+    cameraFront = glm::normalize(cameraDirection);
+
 }
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
 
-    std::cout << "Mouse scroll: " << xoffset << ", " << yoffset << std::endl;
+    lastX = yoffset;
+    float deltaScroll = yoffset - lastY;
+
 }
