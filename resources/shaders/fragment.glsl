@@ -6,25 +6,92 @@ in vec3 VertexPosWorld;
 
 out vec4 FragColour;
 
-uniform sampler2D texture1;
-uniform sampler2D texture2;
+struct Material{
+
+    sampler2D diffuse;
+    sampler2D specular;
+    sampler2D emission;
+    float emissionStrength;
+    int specularRoughness;
+};
+uniform Material material;
+
+struct Light{
+    vec3 lightPos;
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
+
+    float constant;
+    float linear;
+    float quadratic;
+
+};
+uniform Light light;
+
+struct DirectionLight{
+    vec3 direction;
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
+
+};
+uniform DirectionLight directionLight;
+
 uniform float mixFactor;
-uniform float ambientIntensity;
-uniform vec3 lightColour;
-uniform vec3 lightPos;
+uniform vec3 viewPos;
+uniform int lightType;
 
 
 void main()
 {
-    vec3 unitLightDirection = normalize(lightPos - VertexPosWorld);
-    float shadowIntensity = max(dot(normalize(Normal), unitLightDirection), 0.0f);
+    if(lightType == 0){
+        vec3 unitNormal = normalize(Normal);
+        vec3 unitDirectionalLightDirection = normalize(-directionLight.direction);
 
-    vec3 diffuse = shadowIntensity * lightColour;
-    vec3 ambient = ambientIntensity * lightColour;
+        vec3 viewDirection = normalize(viewPos - VertexPosWorld);
+        vec3 specularReflectDirection = reflect(-unitDirectionalLightDirection, unitNormal);
 
-    vec3 textureColour = mix(texture(texture1, TexCoord), texture(texture2, TexCoord), mixFactor).xyz;
-    vec3 resultColour = (ambient + diffuse) * textureColour;
+        float diff = max(dot(unitNormal, unitDirectionalLightDirection), 0.0f);
+        float spec = pow(max(dot(viewDirection, specularReflectDirection), 0.0f), material.specularRoughness);
 
-    FragColour = vec4(resultColour, 1.0f);
+        vec3 emission = material.emissionStrength * vec3(texture(material.emission, TexCoord));
+        vec3 ambient  = directionLight.ambient * vec3(texture(material.diffuse, TexCoord));
+        vec3 diffuse  = directionLight.diffuse * diff * vec3(texture(material.diffuse, TexCoord));
+        vec3 specular = directionLight.specular * spec * vec3(texture(material.specular, TexCoord));
+        vec3 resultColour = ambient + diffuse + specular + emission;
+
+
+        FragColour = vec4(resultColour,1.0f);
+    }
+    if(lightType == 1){
+        vec3 unitNormal = normalize(Normal);
+        vec3 unitLightDirection = normalize(light.lightPos - VertexPosWorld);
+
+        vec3 viewDirection = normalize(viewPos - VertexPosWorld);
+        vec3 specularReflectDirection = reflect(-unitLightDirection, unitNormal);
+
+        float diff = max(dot(unitNormal, unitLightDirection), 0.0f);
+        float spec = pow(max(dot(viewDirection, specularReflectDirection), 0.0f), material.specularRoughness);
+
+        vec3 emission = material.emissionStrength * vec3(texture(material.emission, TexCoord));
+        vec3 ambient  = light.ambient * vec3(texture(material.diffuse, TexCoord));
+        vec3 diffuse  = light.diffuse * diff * vec3(texture(material.diffuse, TexCoord));
+        vec3 specular = light.specular * spec * vec3(texture(material.specular, TexCoord));
+
+        float distance = length(light.lightPos - VertexPosWorld);
+        float attenuation = 1.0f / (light.constant + (light.linear * distance) + (light.quadratic * pow(distance, 2)));
+
+        ambient *= attenuation;
+        diffuse *= attenuation;
+        specular *= attenuation;
+
+        vec3 resultColour = ambient + diffuse + specular + emission;
+
+
+        FragColour = vec4(resultColour,1.0f);
+    }
+
+
 
 }

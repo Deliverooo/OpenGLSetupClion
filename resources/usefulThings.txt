@@ -1,0 +1,7 @@
+to make an object orbit a pivot point, use:
+
+glm::vec3 pivotPos = glm::vec3(2.0f, 0.0f, 2.0f);
+        const float radius = 0.5f;
+        float dX = pivotPos.x + (sin(glfwGetTime()) * radius);
+        float dZ = pivotPos.z + (cos(glfwGetTime()) * radius);
+object = glm::translate(object, glm::vec3(dX, 0.0f, dZ));

@@ -18,12 +18,12 @@ enum Camera_Movement {
 const GLfloat YAW = 90.0f;
 const GLfloat PITCH = 0.0f;
 const GLfloat SPEED = 5.0f;
+const GLfloat JUMP_SPEED = 1.0f;
 const GLfloat SENSITIVITY = 0.08f;
-const GLfloat ZOOM = 45.0f;
-const GLfloat GRAVITY = 9.8f;
-const GLfloat JUMP_HEIGHT = 2.0f;
+const GLfloat ZOOM = 70.0f;
+const GLfloat GRAVITY = -15.0f;
+const GLfloat JUMP_HEIGHT = 7.0f;
 const GLboolean IN_AIR = GL_FALSE;
-
 
 class Camera {
     public:
@@ -42,7 +42,7 @@ class Camera {
         bool inAir;
 
         Camera(glm::vec3 position = glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f),
-            float yaw = YAW, float pitch = PITCH, float speed = SPEED, float sensitivity = SENSITIVITY, float zoom = ZOOM, bool inAir = IN_AIR) {
+            float yaw = YAW, float pitch = PITCH, float speed = SPEED, float sensitivity = SENSITIVITY, float zoom = ZOOM, bool inAir = IN_AIR, float jumpSpeed = JUMP_SPEED ) {
 
             this->cameraPosition = position;
             this->cameraWorldUp = up;
@@ -50,6 +50,7 @@ class Camera {
             this->yaw = yaw;
             this->pitch = pitch;
             this->movementSpeed = speed;
+            this->jumpVelocity = jumpSpeed;
             this->mouseSensitivity = sensitivity;
             this->zoom = zoom;
             this->inAir = inAir;
@@ -71,19 +72,38 @@ class Camera {
                 cameraPosition -= glm::normalize(glm::vec3(cameraFront.x, 0.0f, cameraFront.z)) * velocity;
             }
             if (direction == LEFT) {
-                cameraPosition -= cameraRight * velocity;
+                cameraPosition -= glm::normalize(cameraRight) * velocity;
             }
             if (direction == RIGHT) {
-                cameraPosition += cameraRight * velocity;
+                cameraPosition += glm::normalize(cameraRight) * velocity;
+            }
+            if (direction == JUMP) {
+                jump(deltaTime);
             }
         }
 
         void jump(float deltaTime) {
-
+            if (!inAir) {
+                jumpVelocity = JUMP_SPEED * JUMP_HEIGHT;
+                inAir = GL_TRUE;
+            }
         }
 
-        void update() {
+        void applyGravity(float deltaTime) {
 
+            jumpVelocity += GRAVITY * deltaTime;
+            cameraPosition += glm::vec3(0, jumpVelocity * deltaTime, 0);
+
+            if (cameraPosition.y <= 1) {
+                jumpVelocity = 0;
+                cameraPosition.y = 1;
+                inAir = GL_FALSE;
+            }
+        }
+
+        void update(float deltaTime) {
+
+            applyGravity(deltaTime);
         }
 
         void processMouseMovement(float xoffset, float yoffset, GLboolean constrainPitch = true) {
@@ -109,14 +129,14 @@ class Camera {
             if (zoom < 1.0f) {
                 zoom = 1.0f;
             }
-            if (zoom > 45.0f) {
-                zoom = 45.0f;
+            if (zoom > ZOOM) {
+                zoom = ZOOM;
             }
         }
 
         void updateCameraVectors() {
 
-            //ok, so lets define what is going on here.
+            //ok, so let's define what is going on here.
             // the camera direction vector (or front) is, well the direction the camera is facing.
             //the camera right vector is calculated by taking the cross product of the camera direction and world up
             //then normalizing the result.

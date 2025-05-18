@@ -1,16 +1,16 @@
-//
-// Created by oocon on 15/05/2025.
-//
+#include "glm/glm.hpp"
+#include "glm/gtx/transform.hpp"
+#include "shader.h"
 
 #ifndef CHUNK_H
 #define CHUNK_H
 
+class Chunk {
+    public:
+        static const int CHUNK_SIZE = 16;
+        static const int CHUNK_HEIGHT = 64;
 
-
-class chunk {
 
 };
-
-
 
 #endif //CHUNK_H
