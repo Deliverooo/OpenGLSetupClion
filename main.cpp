@@ -124,8 +124,8 @@ int main()
     }
 
     // build and compile our shader program
-    Shader shader("C:/Users/oocon/CLionProjects/Engine3d/resources/shaders/vertex.glsl", "C:/Users/oocon/CLionProjects/Engine3d/resources/shaders/fragment.glsl"); // you can name your shader files however you like
-    Shader lightShader("C:/Users/oocon/CLionProjects/Engine3d/resources/shaders/light_vertex.glsl", "C:/Users/oocon/CLionProjects/Engine3d/resources/shaders/light_fragment.glsl");
+    Shader shader("resources/shaders/vertex.glsl", "resources/shaders/fragment.glsl"); // you can name your shader files however you like
+    Shader lightShader("resources/shaders/light_vertex.glsl", "resources/shaders/light_fragment.glsl");
 
     GLuint VBO, VAO;
 
