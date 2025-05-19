@@ -21,7 +21,7 @@ const GLfloat SPEED = 5.0f;
 const GLfloat JUMP_SPEED = 1.0f;
 const GLfloat SENSITIVITY = 0.08f;
 const GLfloat ZOOM = 70.0f;
-const GLfloat GRAVITY = -15.0f;
+const GLfloat GRAVITY = -20.0f;
 const GLfloat JUMP_HEIGHT = 7.0f;
 const GLboolean IN_AIR = GL_FALSE;
 

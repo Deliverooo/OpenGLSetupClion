@@ -12,7 +12,8 @@ set(SOURCE_FILES main.cpp GLAD/src/glad.c
         "header files/stb_image.cpp"
         "header files/camera.h"
         "header files/block.h"
-        "header files/mesh.h")
+        "header files/mesh.h"
+        "header files/vao.h")
 
 set(dir ${CMAKE_CURRENT_SOURCE_DIR})
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${dir}/build)
