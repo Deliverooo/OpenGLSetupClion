@@ -23,10 +23,8 @@ void uploadPointLightUniforms(Shader &shader, int index, glm::vec3 &lightPos, gl
 void createSpotLight(Shader &shader, glm::vec3 &lightPos, glm::vec3 &lightDirection, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular,
     float cutOffAngle, float outerCutOffAngle, float constant, float linear, float quadratic);
 
-// settings
-constexpr GLuint WIDTH = 1920;
+#define constexpr GLuint WIDTH = 1920;
 constexpr GLuint HEIGHT = 1080;
-GLfloat FOV = 45.0f;
 
 double deltaTime = 0.0f;
 double lastFrame = 0.0f;
@@ -39,15 +37,15 @@ float lastX = WIDTH / 2.0f;
 float lastY = HEIGHT / 2.0f;
 bool firstMouse = true;
 
-glm::vec3 lightPos2 = glm::vec3(3.0f, 1.0f, 3.0f);
 glm::vec3 lightPos = glm::vec3(6.0f, 1.0f, 6.0f);
+glm::vec3 lightPos2 = glm::vec3(3.0f, 1.0f, 3.0f);
 
 glm::vec3 spotLightPos = glm::vec3(3, 1, 5);
 glm::vec3 spotLightDirection = glm::vec3(0.0f, -1.0f, 0.0f);
 
 glm::vec3 lightDir = glm::vec3(0.0f, -0.7f, 0.5f);
 
-float vertices[] = {
+const float vertices[] = {
         -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,   0.0f, 0.0f, -1.0f,
          0.5f, -0.5f, -0.5f,  1.0f, 0.0f,   0.0f, 0.0f, -1.0f,
          0.5f,  0.5f, -0.5f,  1.0f, 1.0f,   0.0f, 0.0f, -1.0f,
@@ -101,8 +99,8 @@ int main()
     glfwWindowHint(GLFW_SAMPLES, 4);
 
     // glfw window creation
-    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "All hail Orbo", NULL, NULL);
-    if (window == NULL)
+    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "All hail Orbo", nullptr, nullptr);
+    if (window == nullptr)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
@@ -115,7 +113,9 @@ int main()
 
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
+    //enables v-sync
     glfwSwapInterval(1);
+
     // glad: load all OpenGL function pointers
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
@@ -127,7 +127,7 @@ int main()
     Shader shader("C:/Users/oocon/CLionProjects/Engine3d/resources/shaders/vertex.glsl", "C:/Users/oocon/CLionProjects/Engine3d/resources/shaders/fragment.glsl"); // you can name your shader files however you like
     Shader lightShader("C:/Users/oocon/CLionProjects/Engine3d/resources/shaders/light_vertex.glsl", "C:/Users/oocon/CLionProjects/Engine3d/resources/shaders/light_fragment.glsl");
 
-    unsigned int VBO, VAO;
+    GLuint VBO, VAO;
 
     //generates the vertex arrays and buffers
     glGenVertexArrays(1, &VAO);
@@ -160,11 +160,10 @@ int main()
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_MULTISAMPLE);
 
+    std::string diffusePath = "resources/textures/floor_tiles/floor_tiles_06_diff_2k.png";
 
-    Texture diffuseTex("resources/textures/floor_tiles/floor_tiles_06_diff_2k.png", true);
+    Texture diffuseTex(diffusePath, true);
     Texture specularTex("resources/textures/floor_tiles/floor_tiles_06_spec_2k.png", true);
-    Texture emissionMap("resources/textures/taper.png", true);
-
     Texture lowTex("resources/textures/Loooooowwww.png", true);
 
     //makes sure that the shader is currently being used
@@ -173,17 +172,18 @@ int main()
     //tells the shader that the diffuse texture will be passed in texture slot 0
     shader.uploadInt("material.diffuse", 0);
     shader.uploadInt("material.specular", 1);
+    shader.uploadInt("loooow", 2);
 
     Chunk chunk;
 
+    float mixFactor = 1.0f;
 
-    float delay = 0;
     // render loop
     while (!glfwWindowShouldClose(window))
     {
         currentFrame = glfwGetTime();
         processInput(window);
-        camera.update(deltaTime);
+        camera.update(static_cast<float>(deltaTime));
         glClearColor(0.0f, 0.61f, 0.81f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -199,8 +199,7 @@ int main()
         shader.uploadUniformMatrix4f("projection", projection);
         shader.uploadUniformMatrix4f("view", view);
 
-        float mixFactor = 1.0f;
-        int shininess = 32;
+        const int shininess = 32;
 
         createSpotLight(shader, spotLightPos, spotLightDirection, glm::vec3(0.15f), glm::vec3(0.6f),
             glm::vec3(1.0f), glm::cos(glm::radians(38.9f)), glm::cos(glm::radians(50.5f)), 0.7f,
@@ -226,6 +225,9 @@ int main()
         //specular texture
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, specularTex.getId());
+        //specular texture
+        glActiveTexture(GL_TEXTURE2);
+        glBindTexture(GL_TEXTURE_2D, lowTex.getId());
 
         shader.uploadUniformVector3f("viewPos", camera.cameraPosition);
 
@@ -266,6 +268,7 @@ int main()
         OrbitLight(spotLight, spotLightPos, spotLightPivotPos, 6.0f);
         lightShader.uploadUniformMatrix4f("light", spotLight);
         glDrawArrays(GL_TRIANGLES, 0, 36);
+        mixFactor -= deltaTime / 100;
 
         glfwSwapBuffers(window);
         glfwPollEvents();

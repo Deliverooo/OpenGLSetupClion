@@ -6,6 +6,8 @@ in vec3 VertexPosWorld;
 
 out vec4 FragColour;
 
+uniform sampler2D loooow;
+
 struct Material{
 
     sampler2D diffuse;
@@ -85,7 +87,7 @@ vec3 calculatePointLight(PointLight pointLight, vec3 normal, vec3 viewDirection,
     float spec = pow(max(dot(viewDirection, specularReflectDirection), 0.0f), material.specularRoughness);
 
     vec3 ambient  = pointLight.ambient * vec3(texture(material.diffuse, TexCoord));
-    vec3 diffuse  = pointLight.diffuse * diff * vec3(texture(material.diffuse, TexCoord));
+    vec3 diffuse  = pointLight.diffuse * diff * vec3(mix(texture(loooow, TexCoord), texture(material.diffuse, TexCoord), mixFactor));
     vec3 specular = pointLight.specular * spec * vec3(texture(material.specular, TexCoord));
 
     float distance = length(pointLight.lightPos - fragPos);

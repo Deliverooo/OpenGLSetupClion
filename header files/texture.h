@@ -12,7 +12,7 @@ class Texture {
 
     public:
 
-        Texture(std::string filepath, GLboolean flipOnLoad = true) {
+        Texture(const std::string &filepath, const GLboolean flipOnLoad = true) {
 
             glGenTextures(1, &id);
             glBindTexture(GL_TEXTURE_2D, id);
@@ -38,7 +38,7 @@ class Texture {
             stbi_image_free(data);
         }
 
-        GLuint getId() {
+        GLuint getId() const{
                 return id;
         }
 };
