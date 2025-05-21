@@ -17,14 +17,17 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
-void OrbitLight(glm::mat4 &light, glm::vec3 &lightPos, const glm::vec3 &pivotPos, float radius);
-void uploadPointLightUniforms(Shader &shader, int index, glm::vec3 &lightPos, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular,
+void OrbitLight(glm::mat4 &light, glm::vec3 &lightPos, const glm::vec3 &pivotPos, float radius, const int offsetMultiplier);
+void uploadPointLightUniforms(Shader &shader, int index, glm::vec3 &lightPos, glm::vec3 ambient, glm::vec3 diffuse,
     float constant, float linear, float quadratic);
-void createSpotLight(Shader &shader, glm::vec3 &lightPos, glm::vec3 &lightDirection, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular,
+void createSpotLight(Shader &shader, const int index, glm::vec3 &lightPos, glm::vec3 &lightDirection, glm::vec3 ambient, glm::vec3 diffuse,
     float cutOffAngle, float outerCutOffAngle, float constant, float linear, float quadratic);
 
 #define constexpr GLuint WIDTH = 1920;
 constexpr GLuint HEIGHT = 1080;
+
+typedef glm::vec3 Vector3f;
+typedef glm::mat4 Matrix4f;
 
 double deltaTime = 0.0f;
 double lastFrame = 0.0f;
@@ -37,11 +40,15 @@ float lastX = WIDTH / 2.0f;
 float lastY = HEIGHT / 2.0f;
 bool firstMouse = true;
 
-glm::vec3 lightPos = glm::vec3(6.0f, 1.0f, 6.0f);
-glm::vec3 lightPos2 = glm::vec3(3.0f, 1.0f, 3.0f);
+Vector3f lightPos = glm::vec3(2.0f, 1.0f, 2.0f);
+Vector3f lightPos2 = glm::vec3(3.0f, 1.0f, 3.0f);
 
-glm::vec3 spotLightPos = glm::vec3(3, 1, 5);
+glm::vec3 spotLightPos = glm::vec3(5, 1, 5);
+glm::vec3 spotLightPos2 = glm::vec3(5, 1, 5);
 glm::vec3 spotLightDirection = glm::vec3(0.0f, -1.0f, 0.0f);
+
+Vector3f spotLightCol = Vector3f(0.5f);
+Vector3f spotLightCol2 = Vector3f(0.5f);
 
 glm::vec3 lightDir = glm::vec3(0.0f, -0.7f, 0.5f);
 
@@ -162,16 +169,16 @@ int main()
 
     std::string diffusePath = "resources/textures/floor_tiles/floor_tiles_06_diff_2k.png";
 
-    Texture diffuseTex(diffusePath, true);
-    Texture specularTex("resources/textures/floor_tiles/floor_tiles_06_spec_2k.png", true);
-    Texture lowTex("resources/textures/Loooooowwww.png", true);
+    const Texture diffuseTex(diffusePath, "diff");
+    const Texture specularTex("resources/textures/container2_specular.png", "spec");
+    const Texture lowTex("resources/textures/Loooooowwww.png", "taper");
 
     //makes sure that the shader is currently being used
     shader.use();
 
     //tells the shader that the diffuse texture will be passed in texture slot 0
-    shader.uploadInt("material.diffuse", 0);
-    shader.uploadInt("material.specular", 1);
+    shader.uploadInt("material.diffuseTex", 0);
+    shader.uploadInt("material.specularTex", 1);
     shader.uploadInt("loooow", 2);
 
     Chunk chunk;
@@ -184,7 +191,7 @@ int main()
         currentFrame = glfwGetTime();
         processInput(window);
         camera.update(static_cast<float>(deltaTime));
-        glClearColor(0.0f, 0.61f, 0.81f, 1.0f);
+        glClearColor(0.0f, 0.11f, 0.21f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // bind textures on corresponding texture units
@@ -199,23 +206,22 @@ int main()
         shader.uploadUniformMatrix4f("projection", projection);
         shader.uploadUniformMatrix4f("view", view);
 
-        const int shininess = 32;
+        const int shininess = 8;
 
-        createSpotLight(shader, spotLightPos, spotLightDirection, glm::vec3(0.15f), glm::vec3(0.6f),
-            glm::vec3(1.0f), glm::cos(glm::radians(38.9f)), glm::cos(glm::radians(50.5f)), 0.7f,
+        createSpotLight(shader, 0, spotLightPos, spotLightDirection, glm::vec3(0.005f), spotLightCol,
+            glm::cos(glm::radians(38.9f)), glm::cos(glm::radians(50.5f)), 0.7f,
             0.09f, 0.032f);
 
+        createSpotLight(shader, 1, spotLightPos2, spotLightDirection, glm::vec3(0.005f), spotLightCol2,
+            glm::cos(glm::radians(38.9f)), glm::cos(glm::radians(50.5f)), 0.7f,
+        0.09f, 0.032f);
+
         uploadPointLightUniforms(shader, 0, lightPos, glm::vec3(0.15f), glm::vec3(0.6f),
-            glm::vec3(1.0f), 0.7f, 0.09f, 0.032f);
+            0.7f, 0.09f, 0.032f);
 
-        uploadPointLightUniforms(shader, 1, lightPos2, glm::vec3(0.15f), glm::vec3(0.6f),
-            glm::vec3(1.0f), 0.7f, 0.09f, 0.032f);
 
-        shader.uploadUniformVector3f("directionLight.direction", glm::vec3(lightDir));
-        shader.uploadUniformVector3f("directionLight.ambient", glm::vec3(0.005f));
-        shader.uploadUniformVector3f("directionLight.diffuse",  glm::vec3(0.01f));
-        shader.uploadUniformVector3f("directionLight.specular",  glm::vec3(0.02f));
-
+        shader.setFloat("material.specularIntensity", 1.0f);
+        shader.uploadUniformVector3f("material.specularTint", glm::vec3(0.0f, 0.2f, 0.81f));
         shader.uploadInt("material.specularRoughness", shininess);
         shader.setFloat("mixFactor", mixFactor);
 
@@ -244,31 +250,18 @@ int main()
         lightShader.uploadUniformMatrix4f("projection", projection);
         lightShader.uploadUniformMatrix4f("view", view);
 
-        glm::mat4 light = glm::mat4(1.0f);
-
-        glm::vec3 pivotPos = glm::vec3(6.0f, 1.0f, 6.0f);
-        float radius = 2.0f;
-        float dX = pivotPos.x + (sin(glfwGetTime()) * radius);
-        float dY = pivotPos.y + sin(glfwGetTime()) * radius / 4.0f;
-        float dZ = pivotPos.z + (cos(glfwGetTime()) * radius);
-
-        lightPos.x = dX;
-        lightPos.y = dY;
-        lightPos.z = dZ;
-
-        light = glm::translate(light, lightPos);
-        light = glm::scale(light, glm::vec3(0.35f));
-
-        lightShader.uploadUniformMatrix4f("light", light);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-
         glm::mat4 spotLight = glm::mat4(1.0f);
-        glm::vec3 spotLightPivotPos = glm::vec3(3.0f, 1.0f, 3.0f);
-
-        OrbitLight(spotLight, spotLightPos, spotLightPivotPos, 6.0f);
+        glm::vec3 spotLightPivotPos = glm::vec3(6.0f, 2.0f, 6.0f);
+        OrbitLight(spotLight, spotLightPos, spotLightPivotPos, 3.0f, -1);
         lightShader.uploadUniformMatrix4f("light", spotLight);
         glDrawArrays(GL_TRIANGLES, 0, 36);
-        mixFactor -= deltaTime / 100;
+
+        glm::mat4 spotLight2 = glm::mat4(1.0f);
+        glm::vec3 spotLightPivotPos2 = glm::vec3(6.0f, 2.0f, 6.0f);
+        OrbitLight(spotLight2, spotLightPos2, spotLightPivotPos2, 3.0f, 1);
+        lightShader.uploadUniformMatrix4f("light", spotLight2);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+
 
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -332,11 +325,11 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
     camera.processMouseScroll(yoffset);
 }
-void OrbitLight(glm::mat4 &light, glm::vec3 &lightPos, const glm::vec3 &pivotPos, const float radius) {
+void OrbitLight(glm::mat4 &light, glm::vec3 &lightPos, const glm::vec3 &pivotPos, const float radius, const int offsetMultiplier) {
 
-    float dX = pivotPos.x + (sin(glfwGetTime()) * radius);
-    float dY = pivotPos.y + sin(glfwGetTime()) * radius / 4.0f;
-    float dZ = pivotPos.z + (cos(glfwGetTime()) * radius);
+    float dX = pivotPos.x + offsetMultiplier * ((sin(glfwGetTime()) * radius));
+    float dY = pivotPos.y + offsetMultiplier * (sin(glfwGetTime()) * radius / 8.0f);
+    float dZ = pivotPos.z + offsetMultiplier * (cos(glfwGetTime()) * radius);
 
     lightPos.x = dX;
     lightPos.y = dY;
@@ -345,27 +338,25 @@ void OrbitLight(glm::mat4 &light, glm::vec3 &lightPos, const glm::vec3 &pivotPos
     light = glm::translate(light, lightPos);
     light = glm::scale(light, glm::vec3(0.35f));
 }
-void createSpotLight(Shader &shader, glm::vec3 &lightPos, glm::vec3 &lightDirection, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular,
+void createSpotLight(Shader &shader, const int index, glm::vec3 &lightPos, glm::vec3 &lightDirection, glm::vec3 ambient, glm::vec3 lightColour,
     float cutOffAngle, float outerCutOffAngle, float constant, float linear, float quadratic) {
 
-    shader.uploadUniformVector3f("spotlight.position", lightPos);
-    shader.uploadUniformVector3f("spotlight.direction", lightDirection);
-    shader.uploadUniformVector3f("spotlight.ambient", ambient);
-    shader.uploadUniformVector3f("spotlight.diffuse", diffuse);
-    shader.uploadUniformVector3f("spotlight.specular", specular);
-    shader.setFloat("spotlight.cutOffAngle", cutOffAngle);
-    shader.setFloat("spotlight.outerCutOffAngle", outerCutOffAngle);
-    shader.setFloat("spotlight.constant", constant);
-    shader.setFloat("spotlight.linear", linear);
-    shader.setFloat("spotlight.quadratic", quadratic);
+    shader.uploadUniformVector3f("spotlights[" + std::to_string(index) + "].position", lightPos);
+    shader.uploadUniformVector3f("spotlights[" + std::to_string(index) + "].direction", lightDirection);
+    shader.uploadUniformVector3f("spotlights[" + std::to_string(index) + "].ambient", ambient);
+    shader.uploadUniformVector3f("spotlights[" + std::to_string(index) + "].lightColour", lightColour);
+    shader.setFloat("spotlights[" + std::to_string(index) + "].cutOffAngle", cutOffAngle);
+    shader.setFloat("spotlights[" + std::to_string(index) + "].outerCutOffAngle", outerCutOffAngle);
+    shader.setFloat("spotlights[" + std::to_string(index) + "].constant", constant);
+    shader.setFloat("spotlights[" + std::to_string(index) + "].linear", linear);
+    shader.setFloat("spotlights[" + std::to_string(index) + "].quadratic", quadratic);
 }
-void uploadPointLightUniforms(Shader &shader, const int index, glm::vec3 &lightPos, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular,
+void uploadPointLightUniforms(Shader &shader, const int index, Vector3f &lightPos, Vector3f ambient, Vector3f lightColour,
     float constant, float linear, float quadratic) {
 
     shader.uploadUniformVector3f("pointLights[" + std::to_string(index) + "].lightPos", lightPos);
     shader.uploadUniformVector3f("pointLights[" + std::to_string(index) + "].ambient", ambient);
-    shader.uploadUniformVector3f("pointLights[" + std::to_string(index) + "].diffuse", diffuse);
-    shader.uploadUniformVector3f("pointLights[" + std::to_string(index) + "].specular", specular);
+    shader.uploadUniformVector3f("pointLights[" + std::to_string(index) + "].lightColour", lightColour);
     shader.setFloat("pointLights[" + std::to_string(index) + "].constant", constant);
     shader.setFloat("pointLights[" + std::to_string(index) + "].linear", linear);
     shader.setFloat("pointLights[" + std::to_string(index) + "].quadratic", quadratic);

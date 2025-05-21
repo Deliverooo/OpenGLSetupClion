@@ -12,7 +12,7 @@ class Texture {
 
     public:
 
-        Texture(const std::string &filepath, const GLboolean flipOnLoad = true) {
+        Texture(const std::string &filepath, const std::string &type) {
 
             glGenTextures(1, &id);
             glBindTexture(GL_TEXTURE_2D, id);
@@ -23,7 +23,7 @@ class Texture {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-            stbi_set_flip_vertically_on_load(flipOnLoad);
+            stbi_set_flip_vertically_on_load(GL_TRUE);
 
             unsigned char *data = stbi_load(filepath.c_str(), &width, &height, &nrChannels, 0);
 
