@@ -14,6 +14,7 @@ class Texture {
 
         Texture(const std::string &filepath, const std::string &type) {
 
+
             glGenTextures(1, &id);
             glBindTexture(GL_TEXTURE_2D, id);
             // set the texture wrapping parameters
