@@ -4,7 +4,7 @@
 #include <iostream>
 #include "stb_image.h"
 
-class Texture {
+class Texturefile {
     private:
 
         GLuint id;
@@ -12,7 +12,7 @@ class Texture {
 
     public:
 
-        Texture(const std::string &filepath, const std::string &type) {
+        Texturefile(const std::string &filepath, const std::string &type) {
 
 
             glGenTextures(1, &id);

@@ -1,9 +1,14 @@
 #include "shader.h"
-#include "texture.h"
 #include "glad/glad.h"
 
 #ifndef MESH_H
 #define MESH_H
+
+struct Texture {
+    GLuint id;
+    std::string type;
+    std::string path;
+};
 
 struct Vertex {
     glm::vec3 Position;
@@ -36,13 +41,15 @@ class Mesh {
 
                 std::string name = textures[i].type;
                 std::string num;
-
-
-
+                if (name == "diffuseTex") {
+                    num = std::to_string(diffuseNr++);
+                } else if (name == "specularTex") {
+                    num = std::to_string(specularNr++);
+                }
+                shader.uploadInt(("material." + name + num).c_str(), i);
+                glBindTexture(GL_TEXTURE_2D, textures[i].id);
             }
         }
-
-
     private:
         GLuint vaoID, vboID, eboID;
 

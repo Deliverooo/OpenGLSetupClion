@@ -12,6 +12,7 @@
 #include "header files/camera.h"
 #include "header files/chunk.h"
 #include "header files/texture.h"
+#include "include/assimp/mesh.h"
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
@@ -169,9 +170,7 @@ int main()
 
     std::string diffusePath = "resources/textures/floor_tiles/floor_tiles_06_diff_2k.png";
 
-    const Texture diffuseTex(diffusePath, "diff");
-    const Texture specularTex("resources/textures/container2_specular.png", "spec");
-    const Texture lowTex("resources/textures/Loooooowwww.png", "taper");
+
 
     //makes sure that the shader is currently being used
     shader.use();
@@ -184,6 +183,7 @@ int main()
     Chunk chunk;
 
     float mixFactor = 1.0f;
+
 
     // render loop
     while (!glfwWindowShouldClose(window))
@@ -224,16 +224,16 @@ int main()
         shader.uploadUniformVector3f("material.specularTint", glm::vec3(0.0f, 0.2f, 0.81f));
         shader.uploadInt("material.specularRoughness", shininess);
         shader.setFloat("mixFactor", mixFactor);
-
-        //activates texture slot 0 and sets the texture to be the diffuse
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, diffuseTex.getId());
-        //specular texture
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, specularTex.getId());
-        //specular texture
-        glActiveTexture(GL_TEXTURE2);
-        glBindTexture(GL_TEXTURE_2D, lowTex.getId());
+        //
+        // //activates texture slot 0 and sets the texture to be the diffuse
+        // glActiveTexture(GL_TEXTURE0);
+        // glBindTexture(GL_TEXTURE_2D, diffuseTex.getId());
+        // //specular texture
+        // glActiveTexture(GL_TEXTURE1);
+        // glBindTexture(GL_TEXTURE_2D, specularTex.getId());
+        // //specular texture
+        // glActiveTexture(GL_TEXTURE2);
+        // glBindTexture(GL_TEXTURE_2D, lowTex.getId());
 
         shader.uploadUniformVector3f("viewPos", camera.cameraPosition);
 

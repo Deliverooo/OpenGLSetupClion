@@ -12,6 +12,8 @@ struct Material{
 
     sampler2D diffuseTex;
     sampler2D specularTex;
+    sampler2D diffuseTex2;
+    sampler2D specularTex2;
     int specularRoughness;
     float specularIntensity;
     vec3 specularTint;
