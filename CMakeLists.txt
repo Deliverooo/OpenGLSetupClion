@@ -22,9 +22,13 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${dir}/build)
 #Include library files
 include_directories(GLAD/include)
 include_directories(glm/include)
+include_directories(include)
+
 
 #Add deps
 add_subdirectory(dependencies)
 
 add_executable(OpenGLSetup ${SOURCE_FILES} ${HEADER_FILES})
 target_link_libraries(OpenGLSetup glfw)
+
+target_link_libraries(OpenGLSetup C:/Users/oocon/CLionProjects/Engine3d/lib/assimp/assimp-vc143-mt.lib)

@@ -11,15 +11,15 @@
 
 #include "header files/camera.h"
 #include "header files/chunk.h"
+#include "header files/model.h"
 #include "header files/texture.h"
-#include "include/assimp/mesh.h"
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void OrbitLight(glm::mat4 &light, glm::vec3 &lightPos, const glm::vec3 &pivotPos, float radius, const int offsetMultiplier);
-void uploadPointLightUniforms(Shader &shader, int index, glm::vec3 &lightPos, glm::vec3 ambient, glm::vec3 diffuse,
+void uploadPointLightUniforms(Shader &shader, int index, glm::vec3 &lightPos, glm::vec3 ambient, glm::vec3 lightColour,
     float constant, float linear, float quadratic);
 void createSpotLight(Shader &shader, const int index, glm::vec3 &lightPos, glm::vec3 &lightDirection, glm::vec3 ambient, glm::vec3 diffuse,
     float cutOffAngle, float outerCutOffAngle, float constant, float linear, float quadratic);
@@ -53,49 +53,6 @@ Vector3f spotLightCol2 = Vector3f(0.5f);
 
 glm::vec3 lightDir = glm::vec3(0.0f, -0.7f, 0.5f);
 
-const float vertices[] = {
-        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,   0.0f, 0.0f, -1.0f,
-         0.5f, -0.5f, -0.5f,  1.0f, 0.0f,   0.0f, 0.0f, -1.0f,
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,   0.0f, 0.0f, -1.0f,
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,   0.0f, 0.0f, -1.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,   0.0f, 0.0f, -1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,   0.0f, 0.0f, -1.0f,
-
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,   0.0f, 0.0f, 1.0f,
-         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,   0.0f, 0.0f, 1.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 1.0f,   0.0f, 0.0f, 1.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 1.0f,   0.0f, 0.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,   0.0f, 0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,   0.0f, 0.0f, 1.0f,
-
-        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,   -1.0f, 0.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,   -1.0f, 0.0f, 0.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,   -1.0f, 0.0f, 0.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,   -1.0f, 0.0f, 0.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,   -1.0f, 0.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,   -1.0f, 0.0f, 0.0f,
-
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,   1.0f, 0.0f, 0.0f,
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,   1.0f, 0.0f, 0.0f,
-         0.5f, -0.5f, -0.5f,  0.0f, 1.0f,   1.0f, 0.0f, 0.0f,
-         0.5f, -0.5f, -0.5f,  0.0f, 1.0f,   1.0f, 0.0f, 0.0f,
-         0.5f, -0.5f,  0.5f,  0.0f, 0.0f,   1.0f, 0.0f, 0.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,   1.0f, 0.0f, 0.0f,
-
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,   0.0f, -1.0f, 0.0f,
-         0.5f, -0.5f, -0.5f,  1.0f, 1.0f,   0.0f, -1.0f, 0.0f,
-         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,   0.0f, -1.0f, 0.0f,
-         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,   0.0f, -1.0f, 0.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,   0.0f, -1.0f, 0.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,   0.0f, -1.0f, 0.0f,
-
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,   0.0f, 1.0f, 0.0f,
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,   0.0f, 1.0f, 0.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,   0.0f, 1.0f, 0.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,   0.0f, 1.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,   0.0f, 1.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,   0.0f, 1.0f, 0.0f,
-};
 
 int main()
 {
@@ -134,56 +91,15 @@ int main()
     // build and compile our shader program
     Shader shader("resources/shaders/vertex.glsl", "resources/shaders/fragment.glsl"); // you can name your shader files however you like
     Shader lightShader("resources/shaders/light_vertex.glsl", "resources/shaders/light_fragment.glsl");
-
-    GLuint VBO, VAO;
-
-    //generates the vertex arrays and buffers
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-
-    //binds the vertex array, so it is the one that is currently active
-    glBindVertexArray(VAO);
-
-    //binds the buffer so we can store data in it
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    //let me break it down for you Mark.
-    //the size is the number of elements in the attribute. e.g. a vec3 would have 3 and a vec2 would have 2
-    //the stride is the total number of elements multiplied by the float size in bytes. e.g. a vec2 and vec3 would have a combined size of 5
-    // the pointer is the offset for each attribute from the previous one
-    // position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-    //texture coordinates attribute
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
-    //normals attribute
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(5 * sizeof(float)));
-    glEnableVertexAttribArray(2);
-
-    // You can unbind the VAO afterward so other VAO calls won't accidentally modify this VAO, but this rarely happens. Modifying other
-    // VAOs requires a call to glBindVertexArray anyway so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
-
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_MULTISAMPLE);
-
-    std::string diffusePath = "resources/textures/floor_tiles/floor_tiles_06_diff_2k.png";
-
-
-
     //makes sure that the shader is currently being used
     shader.use();
 
-    //tells the shader that the diffuse texture will be passed in texture slot 0
-    shader.uploadInt("material.diffuseTex", 0);
-    shader.uploadInt("material.specularTex", 1);
-    shader.uploadInt("loooow", 2);
-
     Chunk chunk;
 
-    float mixFactor = 1.0f;
+    Model orboModel("resources/models/orbo/Orbo_Obj.obj");
+    Model floorTiles("resources/models/floor Tiles/Floor.obj");
 
+    glEnable(GL_DEPTH_TEST);
 
     // render loop
     while (!glfwWindowShouldClose(window))
@@ -194,73 +110,35 @@ int main()
         glClearColor(0.0f, 0.11f, 0.21f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        // bind textures on corresponding texture units
         shader.use();
 
-        glm::mat4 projection;
-        projection = glm::perspective(glm::radians(camera.zoom), (float) WIDTH / (float) HEIGHT, 0.1f, 100.0f);
-
-        glm::mat4 view;
-        view = glm::lookAt(camera.cameraPosition, camera.cameraPosition + camera.cameraFront, camera.cameraUp);
-
+        glm::mat4 projection = glm::perspective(glm::radians(camera.zoom), (float) WIDTH / (float) HEIGHT, 0.1f, 100.0f);
+        glm::mat4 view = glm::lookAt(camera.cameraPosition, camera.cameraPosition + camera.cameraFront, camera.cameraUp);
         shader.uploadUniformMatrix4f("projection", projection);
         shader.uploadUniformMatrix4f("view", view);
+        shader.uploadUniformVector3f("viewPos", camera.cameraFront);
+        shader.uploadInt("material.specularRoughness", 4);
+        shader.setFloat("material.specularIntensity", 0.1f);
+        shader.uploadUniformVector3f("material.specularTint", glm::vec3(1.0f, 1.0f, 1.0f));
 
-        const int shininess = 8;
+        uploadPointLightUniforms(shader, 0, lightPos, glm::vec3(0.1f), glm::vec3(1.0f), 0.7f, 0.09f, 0.032f);
 
-        createSpotLight(shader, 0, spotLightPos, spotLightDirection, glm::vec3(0.005f), spotLightCol,
-            glm::cos(glm::radians(38.9f)), glm::cos(glm::radians(50.5f)), 0.7f,
-            0.09f, 0.032f);
+        glm::mat4 model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(0.0f, 0.0f, 1.0f));
+        model = glm::rotate(model, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        model = glm::scale(model, glm::vec3(1.0f));
+        shader.uploadUniformMatrix4f("model", model);
+        orboModel.draw(shader);
 
-        createSpotLight(shader, 1, spotLightPos2, spotLightDirection, glm::vec3(0.005f), spotLightCol2,
-            glm::cos(glm::radians(38.9f)), glm::cos(glm::radians(50.5f)), 0.7f,
-        0.09f, 0.032f);
+        glm::mat4 floor = glm::mat4(1.0f);
+        floor = glm::translate(floor, glm::vec3(0.0f, -1.0f, 1.0f));
+        floor = glm::rotate(floor, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        floor = glm::scale(floor, glm::vec3(1.0f));
+        shader.uploadUniformMatrix4f("model", floor);
+        floorTiles.draw(shader);
 
-        uploadPointLightUniforms(shader, 0, lightPos, glm::vec3(0.15f), glm::vec3(0.6f),
-            0.7f, 0.09f, 0.032f);
-
-
-        shader.setFloat("material.specularIntensity", 1.0f);
-        shader.uploadUniformVector3f("material.specularTint", glm::vec3(0.0f, 0.2f, 0.81f));
-        shader.uploadInt("material.specularRoughness", shininess);
-        shader.setFloat("mixFactor", mixFactor);
-        //
-        // //activates texture slot 0 and sets the texture to be the diffuse
-        // glActiveTexture(GL_TEXTURE0);
-        // glBindTexture(GL_TEXTURE_2D, diffuseTex.getId());
-        // //specular texture
-        // glActiveTexture(GL_TEXTURE1);
-        // glBindTexture(GL_TEXTURE_2D, specularTex.getId());
-        // //specular texture
-        // glActiveTexture(GL_TEXTURE2);
-        // glBindTexture(GL_TEXTURE_2D, lowTex.getId());
-
-        shader.uploadUniformVector3f("viewPos", camera.cameraPosition);
-
-        chunk.draw(shader);
-
-        glm::mat4 cube = glm::mat4(1.0f);
-        glm::vec3 cubePos = glm::vec3(3.0f, 0.0f, 3.0f);
-        cube = glm::translate(cube, cubePos);
-
-        shader.uploadUniformMatrix4f("model", cube);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-
-        lightShader.use();
-        lightShader.uploadUniformMatrix4f("projection", projection);
-        lightShader.uploadUniformMatrix4f("view", view);
-
-        glm::mat4 spotLight = glm::mat4(1.0f);
-        glm::vec3 spotLightPivotPos = glm::vec3(6.0f, 2.0f, 6.0f);
-        OrbitLight(spotLight, spotLightPos, spotLightPivotPos, 3.0f, -1);
-        lightShader.uploadUniformMatrix4f("light", spotLight);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-
-        glm::mat4 spotLight2 = glm::mat4(1.0f);
-        glm::vec3 spotLightPivotPos2 = glm::vec3(6.0f, 2.0f, 6.0f);
-        OrbitLight(spotLight2, spotLightPos2, spotLightPivotPos2, 3.0f, 1);
-        lightShader.uploadUniformMatrix4f("light", spotLight2);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+        glm::mat4 light = glm::mat4(1.0f);
+        OrbitLight(light, lightPos, glm::vec3(0.0f, 0.0f, 0.0f), 3.0f, 1);
 
 
         glfwSwapBuffers(window);
@@ -269,9 +147,6 @@ int main()
         lastFrame = glfwGetTime();
         deltaTime = lastFrame - currentFrame;
     }
-
-    glDeleteVertexArrays(1, &VAO);
-    glDeleteBuffers(1, &VBO);
 
     glfwDestroyWindow(window);
     glfwTerminate();
@@ -297,6 +172,9 @@ void processInput(GLFWwindow *window)
     }
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
         camera.processKeyboard(JUMP, deltaTime);
+    }
+    if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) {
+        std::cout << "printing" << std::endl;
     }
 }
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
@@ -332,7 +210,7 @@ void OrbitLight(glm::mat4 &light, glm::vec3 &lightPos, const glm::vec3 &pivotPos
     float dZ = pivotPos.z + offsetMultiplier * (cos(glfwGetTime()) * radius);
 
     lightPos.x = dX;
-    lightPos.y = dY;
+
     lightPos.z = dZ;
 
     light = glm::translate(light, lightPos);
