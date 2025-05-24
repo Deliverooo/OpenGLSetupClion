@@ -15,6 +15,8 @@
 class Shader
 {
 public:
+
+    //the id for the shader
     unsigned int ID;
     // constructor generates the shader on the fly
     // ------------------------------------------------------------------------
@@ -103,8 +105,6 @@ public:
     void uploadUniformMatrix4f(const std::string &name, const glm::mat4 &mat4) const {
         glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, &mat4[0][0]);
     }
-
-private:
 
 };
 #endif

@@ -11,6 +11,7 @@
 
 #include "header files/camera.h"
 #include "header files/chunk.h"
+#include "header files/entity.h"
 #include "header files/model.h"
 #include "header files/texture.h"
 
@@ -21,7 +22,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void OrbitLight(glm::mat4 &light, glm::vec3 &lightPos, const glm::vec3 &pivotPos, float radius, const int offsetMultiplier);
 void uploadPointLightUniforms(Shader &shader, int index, glm::vec3 &lightPos, glm::vec3 ambient, glm::vec3 lightColour,
     float constant, float linear, float quadratic);
-void createSpotLight(Shader &shader, const int index, glm::vec3 &lightPos, glm::vec3 &lightDirection, glm::vec3 ambient, glm::vec3 diffuse,
+void createSpotLight(Shader &shader, const int index, glm::vec3 &lightPos, glm::vec3 &lightDirection, glm::vec3 ambient, glm::vec3 lightColour,
     float cutOffAngle, float outerCutOffAngle, float constant, float linear, float quadratic);
 
 #define constexpr GLuint WIDTH = 1920;
@@ -41,11 +42,12 @@ float lastX = WIDTH / 2.0f;
 float lastY = HEIGHT / 2.0f;
 bool firstMouse = true;
 
-Vector3f lightPos = glm::vec3(2.0f, 1.0f, 2.0f);
+Vector3f lightPos = glm::vec3(0.0f, 1.0f, 0.0f);
 Vector3f lightPos2 = glm::vec3(3.0f, 1.0f, 3.0f);
 
-glm::vec3 spotLightPos = glm::vec3(5, 1, 5);
-glm::vec3 spotLightPos2 = glm::vec3(5, 1, 5);
+bool pickedUp = false;
+Vector3f modelItemPos = Vector3f(0.0f, 0.0f, 1.0f);
+glm::vec3 spotLightPos = glm::vec3(0.0f, 2.0f, 0.0f);
 glm::vec3 spotLightDirection = glm::vec3(0.0f, -1.0f, 0.0f);
 
 Vector3f spotLightCol = Vector3f(0.5f);
@@ -91,13 +93,35 @@ int main()
     // build and compile our shader program
     Shader shader("resources/shaders/vertex.glsl", "resources/shaders/fragment.glsl"); // you can name your shader files however you like
     Shader lightShader("resources/shaders/light_vertex.glsl", "resources/shaders/light_fragment.glsl");
+    Shader testShader("resources/shaders/textVshader.glsl", "resources/shaders/textFshader.glsl");
+
     //makes sure that the shader is currently being used
     shader.use();
 
     Chunk chunk;
 
     Model orboModel("resources/models/orbo/Orbo_Obj.obj");
+    Model spotModel("resources/models/orbo/Orbo_Obj.obj");
     Model floorTiles("resources/models/floor Tiles/Floor.obj");
+    Model lightModel("resources/models/orbo/Orbo_Obj.obj");
+    Model trebModel("resources/models/treb/Trebushay.obj");
+    Model vecModel("resources/models/vec/Vector_001.obj");
+
+    Transform npcOrboTransform(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
+    Entity npcOrboEntity(npcOrboTransform, orboModel);
+
+    Transform vecTransform(glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
+    Entity vecEntity(vecTransform, vecModel);
+
+    Transform trebTransform(glm::vec3(0.0f, 0.0f, 5.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.1f));
+    Entity trebEntity(trebTransform, trebModel);
+
+    Transform orbotransform(glm::vec3(2.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
+    Entity orboEntity(orbotransform, orboModel);
+
+    Transform floortransform(glm::vec3(0.0f, -0.5f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
+    Entity floorEntity(floortransform, floorTiles);
+
 
     glEnable(GL_DEPTH_TEST);
 
@@ -108,7 +132,7 @@ int main()
         processInput(window);
         camera.update(static_cast<float>(deltaTime));
         glClearColor(0.0f, 0.11f, 0.21f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
         shader.use();
 
@@ -117,28 +141,52 @@ int main()
         shader.uploadUniformMatrix4f("projection", projection);
         shader.uploadUniformMatrix4f("view", view);
         shader.uploadUniformVector3f("viewPos", camera.cameraFront);
-        shader.uploadInt("material.specularRoughness", 4);
+        shader.uploadInt("material.specularRoughness", 16);
         shader.setFloat("material.specularIntensity", 0.1f);
         shader.uploadUniformVector3f("material.specularTint", glm::vec3(1.0f, 1.0f, 1.0f));
 
-        uploadPointLightUniforms(shader, 0, lightPos, glm::vec3(0.1f), glm::vec3(1.0f), 0.7f, 0.09f, 0.032f);
+        uploadPointLightUniforms(shader, 0, lightPos, glm::vec3(0.2f), glm::vec3(0.7f), 0.7f, 0.09f, 0.032f);
 
-        glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(0.0f, 0.0f, 1.0f));
-        model = glm::rotate(model, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        model = glm::scale(model, glm::vec3(1.0f));
-        shader.uploadUniformMatrix4f("model", model);
+        createSpotLight(shader, 0, spotLightPos, spotLightDirection, Vector3f(0.2f), spotLightCol,
+            cos(glm::radians(35.0f)), cos(glm::radians(40.0f)), 0.7f, 0.09f, 0.032f);
+
+
+        npcOrboEntity.transform.rotation.y = glm::radians(camera.yaw);
+        npcOrboEntity.draw(shader);
+
         orboModel.draw(shader);
 
-        glm::mat4 floor = glm::mat4(1.0f);
-        floor = glm::translate(floor, glm::vec3(0.0f, -1.0f, 1.0f));
-        floor = glm::rotate(floor, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        floor = glm::scale(floor, glm::vec3(1.0f));
-        shader.uploadUniformMatrix4f("model", floor);
-        floorTiles.draw(shader);
+
+        orboEntity.draw(shader);
+
+        if (orboEntity.transform.scale.z <= 1.5f) {
+            orboEntity.transform.scale.z += deltaTime * 0.1f;
+        }else if (orboEntity.transform.scale.y <= 1.5f) {
+            orboEntity.transform.scale.y += deltaTime * 0.1f;
+        }else if (orboEntity.transform.scale.x <= 1.5f) {
+            orboEntity.transform.scale.x += deltaTime * 0.1f;
+        }else if (orboEntity.transform.position.x <= 5.5f) {
+            orboEntity.transform.position.x += deltaTime * 0.1f;
+        } else {
+            orboEntity.transform.rotation.y += deltaTime * 0.1f;
+            orboEntity.transform.rotation.z += deltaTime * 0.1f;
+
+        }
+
+
+        floorEntity.draw(shader);
+        trebEntity.draw(shader);
 
         glm::mat4 light = glm::mat4(1.0f);
-        OrbitLight(light, lightPos, glm::vec3(0.0f, 0.0f, 0.0f), 3.0f, 1);
+        OrbitLight(light, lightPos, glm::vec3(0.0f, 1.0f, 0.0f), 3.0f, -1);
+        shader.uploadUniformMatrix4f("model", light);
+        lightModel.draw(shader);
+
+        glm::mat4 spotLight = glm::mat4(1.0f);
+
+        OrbitLight(spotLight, spotLightPos, glm::vec3(0.0f, 1.0f, 0.0f), 1.0f, 1);
+        shader.uploadUniformMatrix4f("model", spotLight);
+        spotModel.draw(shader);
 
 
         glfwSwapBuffers(window);
@@ -210,7 +258,7 @@ void OrbitLight(glm::mat4 &light, glm::vec3 &lightPos, const glm::vec3 &pivotPos
     float dZ = pivotPos.z + offsetMultiplier * (cos(glfwGetTime()) * radius);
 
     lightPos.x = dX;
-
+    lightPos.y = dY;
     lightPos.z = dZ;
 
     light = glm::translate(light, lightPos);

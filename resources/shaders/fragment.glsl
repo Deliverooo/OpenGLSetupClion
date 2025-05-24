@@ -3,6 +3,7 @@
 in vec2 TexCoords;
 in vec3 Normal;
 in vec3 VertexPosWorld;
+in vec3 BaseColour;
 
 out vec4 FragColour;
 
@@ -59,7 +60,7 @@ struct SpotLight{
     float outerCutOffAngle;
 
 };
-#define NR_SPOT_LIGHTS 2
+#define NR_SPOT_LIGHTS 1
 uniform SpotLight spotlights[NR_SPOT_LIGHTS];
 
 vec3 calculateDirectionalLight(DirectionLight directionLight, vec3 normal, vec3 viewDirection){
@@ -88,7 +89,7 @@ vec3 calculatePointLight(PointLight pointLight, vec3 normal, vec3 viewDirection,
     float spec = pow(max(dot(viewDirection, specularReflectDirection), 0.0f), material.specularRoughness);
 
     vec3 ambient  = pointLight.ambient * vec3(texture(diffuseTex1, TexCoords));
-    vec3 diffuse  = pointLight.lightColour * diff * vec3(texture(diffuseTex1, TexCoords));
+    vec3 diffuse  = pointLight.lightColour * diff * (vec3(texture(diffuseTex1, TexCoords)) + BaseColour);
     vec3 specular = (material.specularTint * spec * vec3(texture(specularTex1, TexCoords))) * material.specularIntensity;
 
     float distance = length(pointLight.lightPos - fragPos);
@@ -114,18 +115,21 @@ vec3 calculateSpotLight(SpotLight spotlight, vec3 normal, vec3 viewDirection, ve
     if(theta > spotlight.outerCutOffAngle){
 
         float epsilon = spotlight.cutOffAngle - spotlight.outerCutOffAngle;
-        float fadeIntensity = smoothstep(0.0f, 1.0f, (theta - spotlight.outerCutOffAngle) / epsilon);
+        float fadeIntensity = smoothstep(0.0f, 1.0f, ((theta - spotlight.outerCutOffAngle) / epsilon));
 
         float diff = max(dot(normal, unitLightDirection), 0.0f);
         float spec = pow(max(dot(viewDirection, specularReflectDirection), 0.0f), material.specularRoughness);
 
-        vec3 ambient  = spotlight.ambient * vec3(texture(diffuseTex1, TexCoords)) * attenuation;
-        vec3 diffuse  = spotlight.lightColour * diff * vec3(texture(diffuseTex1, TexCoords)) * attenuation;
-        vec3 specular = (material.specularTint * spec * vec3(texture(specularTex1, TexCoords)) * material.specularIntensity) * attenuation;
-
+        vec3 ambient  = spotlight.ambient * vec3(texture(diffuseTex1, TexCoords));
+        vec3 diffuse  = spotlight.lightColour * diff * vec3(texture(diffuseTex1, TexCoords));
+        vec3 specular = (material.specularTint * spec * vec3(texture(specularTex1, TexCoords)) * material.specularIntensity);
 
         diffuse *= fadeIntensity;
-        specular *= fadeIntensity ;
+        specular *= fadeIntensity;
+
+        ambient *= attenuation;
+        diffuse *= attenuation;
+        specular *= attenuation;
 
         return ambient + diffuse + specular;
     }
@@ -145,7 +149,10 @@ void main()
 
         result += calculatePointLight(pointLights[i], unitNormal, viewDirection, VertexPosWorld);
     }
+    for(int i = 0; i < NR_SPOT_LIGHTS; i++){
 
+        result += calculateSpotLight(spotlights[i], unitNormal, viewDirection, VertexPosWorld);
+    }
 
     FragColour = vec4(result, 1.0f);
 }
