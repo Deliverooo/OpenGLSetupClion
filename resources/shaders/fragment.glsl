@@ -11,7 +11,6 @@ uniform sampler2D diffuseTex1;
 uniform sampler2D diffuseTex2;
 uniform sampler2D specularTex1;
 uniform sampler2D specularTex2;
-
 uniform vec3 viewPos;
 
 struct Material{
@@ -79,6 +78,7 @@ vec3 calculateDirectionalLight(DirectionLight directionLight, vec3 normal, vec3 
 
     return ambient + diffuse + specular;
 }
+
 vec3 calculatePointLight(PointLight pointLight, vec3 normal, vec3 viewDirection, vec3 fragPos){
 
     vec3 unitLightDirection = normalize(pointLight.lightPos - fragPos);
@@ -155,4 +155,6 @@ void main()
     }
 
     FragColour = vec4(result, 1.0f);
+
+
 }

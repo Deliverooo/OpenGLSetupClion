@@ -106,6 +106,10 @@ int main()
     Model lightModel("resources/models/orbo/Orbo_Obj.obj");
     Model trebModel("resources/models/treb/Trebushay.obj");
     Model vecModel("resources/models/vec/Vector_001.obj");
+    Model pcModel("resources/models/pc/pc.obj");
+
+    Transform pcTransform(glm::vec3(3.0f, 0.0f, 3.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.5f));
+    Entity pcEntity(pcTransform, pcModel);
 
     Transform npcOrboTransform(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
     Entity npcOrboEntity(npcOrboTransform, orboModel);
@@ -141,9 +145,6 @@ int main()
         shader.uploadUniformMatrix4f("projection", projection);
         shader.uploadUniformMatrix4f("view", view);
         shader.uploadUniformVector3f("viewPos", camera.cameraFront);
-        shader.uploadInt("material.specularRoughness", 16);
-        shader.setFloat("material.specularIntensity", 0.1f);
-        shader.uploadUniformVector3f("material.specularTint", glm::vec3(1.0f, 1.0f, 1.0f));
 
         uploadPointLightUniforms(shader, 0, lightPos, glm::vec3(0.2f), glm::vec3(0.7f), 0.7f, 0.09f, 0.032f);
 
@@ -151,10 +152,6 @@ int main()
             cos(glm::radians(35.0f)), cos(glm::radians(40.0f)), 0.7f, 0.09f, 0.032f);
 
 
-        npcOrboEntity.transform.rotation.y = glm::radians(camera.yaw);
-        npcOrboEntity.draw(shader);
-
-        orboModel.draw(shader);
 
 
         orboEntity.draw(shader);
@@ -173,9 +170,9 @@ int main()
 
         }
 
-
         floorEntity.draw(shader);
         trebEntity.draw(shader);
+        pcEntity.draw(shader);
 
         glm::mat4 light = glm::mat4(1.0f);
         OrbitLight(light, lightPos, glm::vec3(0.0f, 1.0f, 0.0f), 3.0f, -1);
@@ -287,5 +284,3 @@ void uploadPointLightUniforms(Shader &shader, const int index, Vector3f &lightPo
     shader.setFloat("pointLights[" + std::to_string(index) + "].linear", linear);
     shader.setFloat("pointLights[" + std::to_string(index) + "].quadratic", quadratic);
 }
-
-

@@ -15,6 +15,14 @@ struct Vertex {
     glm::vec3 Normal;
     glm::vec2 TexCoords;
 };
+
+struct Material {
+    glm::vec3 diffuse;
+    glm::vec3 specular;
+    glm::vec3 ambient;
+    float shininess;
+};
+
 class Mesh {
 
     public:
@@ -22,17 +30,20 @@ class Mesh {
         std::vector<Vertex> vertices;
         std::vector<GLuint> indices;
         std::vector<Texture> textures;
+        Material material;
+
         GLuint VAO;
 
-        Mesh(std::vector<Vertex> vertices, std::vector<GLuint> indices, std::vector<Texture> textures) {
+        Mesh(std::vector<Vertex> vertices, std::vector<GLuint> indices, std::vector<Texture> textures, Material material) {
             this->vertices = vertices;
             this->indices = indices;
             this->textures = textures;
+            this->material = material;
 
             prepareMesh();
-
         }
-        void draw(Shader &shader) {
+
+    void draw(Shader &shader) {
 
             GLuint diffuseNr = 1;
             GLuint specularNr = 1;
@@ -55,6 +66,11 @@ class Mesh {
                 glBindTexture(GL_TEXTURE_2D, textures[i].id);
             }
             glActiveTexture(GL_TEXTURE0);
+
+            shader.uploadInt("material.specularRoughness", 32);
+            shader.setFloat("material.specularIntensity", material.shininess);
+            shader.uploadUniformVector3f("material.specularTint", material.specular);
+
 
             glBindVertexArray(VAO);
             glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);

@@ -25,6 +25,7 @@ class Model {
                 meshes[i].draw(shader);
             }
         }
+
     private:
 
         std::string directory;
@@ -86,6 +87,26 @@ class Model {
             }
             return textures;
         }
+        Material loadMaterial(aiMaterial *mat) {
+
+            Material material;
+            aiColor3D colour(0.0f, 0.0f, 0.0f);
+            float shininess;
+
+            mat->Get(AI_MATKEY_COLOR_DIFFUSE, colour);
+            material.diffuse = glm::vec3(colour[0], colour[1], colour[2]);
+
+            mat->Get(AI_MATKEY_COLOR_AMBIENT, colour);
+            material.ambient = glm::vec3(colour[0], colour[1], colour[2]);
+
+            mat->Get(AI_MATKEY_COLOR_SPECULAR, colour);
+            material.specular = glm::vec3(colour[0], colour[1], colour[2]);
+
+            mat->Get(AI_MATKEY_SHININESS, shininess);
+            material.shininess = shininess;
+
+            return material;
+        }
 
         Mesh processMesh(aiMesh *mesh, const aiScene *scene) {
 
@@ -137,8 +158,12 @@ class Model {
 
                 textures.insert(textures.end(), specularTextures.begin(), specularTextures.end());
             }
-            return Mesh(vertices, indices, textures);
+            aiMaterial *materialc = scene->mMaterials[mesh->mMaterialIndex];
+            Material mat = loadMaterial(materialc);
+
+            return Mesh(vertices, indices, textures, mat);
         }
+
 
         //this function takes in a node and recursively creates a mesh for each of its children, then adds it to the mesh
         void processNode(aiNode *node, const aiScene *scene) {
