@@ -35,17 +35,14 @@ double deltaTime = 0.0f;
 double lastFrame = 0.0f;
 double currentFrame = 0.0f;
 
-Camera camera(glm::vec3(0.0f, 1.0f, 0.0f));
-
 float lastScroll = 0;
-float lastX = WIDTH / 2.0f;
-float lastY = HEIGHT / 2.0f;
+float lastX = static_cast<float>(WIDTH) / 2.0f;
+float lastY = static_cast<float>(HEIGHT) / 2.0f;
 bool firstMouse = true;
 
 Vector3f lightPos = glm::vec3(0.0f, 1.0f, 0.0f);
 Vector3f lightPos2 = glm::vec3(3.0f, 1.0f, 3.0f);
 
-bool pickedUp = false;
 Vector3f modelItemPos = Vector3f(0.0f, 0.0f, 1.0f);
 glm::vec3 spotLightPos = glm::vec3(0.0f, 2.0f, 0.0f);
 glm::vec3 spotLightDirection = glm::vec3(0.0f, -1.0f, 0.0f);
@@ -55,6 +52,8 @@ Vector3f spotLightCol2 = Vector3f(0.5f);
 
 glm::vec3 lightDir = glm::vec3(0.0f, -0.7f, 0.5f);
 
+glm::vec3 cacheCameraPos = glm::vec3(0.0f, 0.0f, 0.0f);
+Camera camera(cacheCameraPos);
 
 int main()
 {
@@ -80,6 +79,7 @@ int main()
 
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
+
     //enables v-sync
     glfwSwapInterval(1);
 
@@ -89,6 +89,16 @@ int main()
         std::cout << "Failed to initialize GLAD" << std::endl;
         return -1;
     }
+
+    std::string cacheText;
+    ifstream readCacheCamPosFile("orbo.txt");
+    while (getline(readCacheCamPosFile, cacheText)) {
+        cout << cacheText << endl;
+    }
+    cacheCameraPos.x = std::stof(cacheText.substr(0, 7).c_str());
+    cacheCameraPos.y = std::stof(cacheText.substr(7, 14).c_str());
+    cacheCameraPos.z = std::stof(cacheText.substr(14, 21).c_str());
+    camera.cameraPosition = cacheCameraPos;
 
     // build and compile our shader program
     Shader shader("resources/shaders/vertex.glsl", "resources/shaders/fragment.glsl"); // you can name your shader files however you like
@@ -108,7 +118,7 @@ int main()
     Model vecModel("resources/models/vec/Vector_001.obj");
     Model pcModel("resources/models/pc/pc.obj");
 
-    Transform pcTransform(glm::vec3(3.0f, 0.0f, 3.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.5f));
+    Transform pcTransform(glm::vec3(3.0f, 0.0f, 3.0f), glm::vec3(0.0f, 4.0f, 0.0f), glm::vec3(0.5f));
     Entity pcEntity(pcTransform, pcModel);
 
     Transform npcOrboTransform(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
@@ -126,6 +136,7 @@ int main()
     Transform floortransform(glm::vec3(0.0f, -0.5f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
     Entity floorEntity(floortransform, floorTiles);
 
+    std::cout << camera.cameraPosition.x << " " << camera.cameraPosition.y << " " << camera.cameraPosition.z << std::endl;
 
     glEnable(GL_DEPTH_TEST);
 
@@ -146,7 +157,7 @@ int main()
         shader.uploadUniformMatrix4f("view", view);
         shader.uploadUniformVector3f("viewPos", camera.cameraFront);
 
-        uploadPointLightUniforms(shader, 0, lightPos, glm::vec3(0.2f), glm::vec3(0.7f), 0.7f, 0.09f, 0.032f);
+        uploadPointLightUniforms(shader, 0, lightPos, glm::vec3(0.2f), glm::vec3(0.4f), 0.7f, 0.09f, 0.032f);
 
         createSpotLight(shader, 0, spotLightPos, spotLightDirection, Vector3f(0.2f), spotLightCol,
             cos(glm::radians(35.0f)), cos(glm::radians(40.0f)), 0.7f, 0.09f, 0.032f);
@@ -157,16 +168,16 @@ int main()
         orboEntity.draw(shader);
 
         if (orboEntity.transform.scale.z <= 1.5f) {
-            orboEntity.transform.scale.z += deltaTime * 0.1f;
+            orboEntity.transform.scale.z += deltaTime * 0.5f;
         }else if (orboEntity.transform.scale.y <= 1.5f) {
-            orboEntity.transform.scale.y += deltaTime * 0.1f;
+            orboEntity.transform.scale.y += deltaTime * 0.5f;
         }else if (orboEntity.transform.scale.x <= 1.5f) {
-            orboEntity.transform.scale.x += deltaTime * 0.1f;
+            orboEntity.transform.scale.x += deltaTime * 0.5f;
         }else if (orboEntity.transform.position.x <= 5.5f) {
-            orboEntity.transform.position.x += deltaTime * 0.1f;
+            orboEntity.transform.position.x += deltaTime * 0.5f;
         } else {
-            orboEntity.transform.rotation.y += deltaTime * 0.1f;
-            orboEntity.transform.rotation.z += deltaTime * 0.1f;
+            orboEntity.transform.rotation.y += deltaTime * 0.5f;
+            orboEntity.transform.rotation.z += deltaTime * 0.5f;
 
         }
 
@@ -192,6 +203,9 @@ int main()
         lastFrame = glfwGetTime();
         deltaTime = lastFrame - currentFrame;
     }
+
+    ofstream cachePosFile("orbo.txt");
+    cachePosFile << std::to_string(camera.cameraPosition.x) + " , " << std::to_string(camera.cameraPosition.y) + " , " << std::to_string(camera.cameraPosition.z);
 
     glfwDestroyWindow(window);
     glfwTerminate();

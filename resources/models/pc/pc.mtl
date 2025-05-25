@@ -2,9 +2,9 @@
 # www.blender.org
 
 newmtl DefaultMaterial
-Ns 2.0
+Ns 0.1
 Ka 1.000000 1.000000 1.000000
-Ks 0.500000 0.500000 0.500000
+Ks 1.0 0.0 0.0
 Ke 0.000000 0.000000 0.000000
 Ni 1.500000
 d 1.000000
@@ -12,7 +12,7 @@ illum 3
 map_Kd T_PC_AlbedoTransparency.png
 
 newmtl Material
-Ns 2.0
+Ns 0.1
 Ka 1.000000 1.000000 1.000000
 Ks 0.500000 0.500000 0.500000
 Ke 0.000000 0.000000 0.000000

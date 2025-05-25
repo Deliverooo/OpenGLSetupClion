@@ -67,8 +67,8 @@ class Mesh {
             }
             glActiveTexture(GL_TEXTURE0);
 
-            shader.uploadInt("material.specularRoughness", 32);
-            shader.setFloat("material.specularIntensity", material.shininess);
+            shader.uploadInt("material.specularRoughness", 4);
+            shader.setFloat("material.shininess", material.shininess);
             shader.uploadUniformVector3f("material.specularTint", material.specular);
 
 

@@ -16,7 +16,7 @@ uniform vec3 viewPos;
 struct Material{
 
     int specularRoughness;
-    float specularIntensity;
+    float shininess;
     vec3 specularTint;
 
 };
@@ -74,7 +74,7 @@ vec3 calculateDirectionalLight(DirectionLight directionLight, vec3 normal, vec3 
 
     vec3 ambient  = directionLight.ambient * vec3(texture(diffuseTex1, TexCoords));
     vec3 diffuse  = directionLight.lightColour * diff * vec3(texture(diffuseTex1, TexCoords));
-    vec3 specular = (material.specularTint * spec * vec3(texture(specularTex1, TexCoords))) * material.specularIntensity;
+    vec3 specular = (material.specularTint * spec * vec3(texture(specularTex1, TexCoords))) * material.shininess;
 
     return ambient + diffuse + specular;
 }
@@ -90,7 +90,7 @@ vec3 calculatePointLight(PointLight pointLight, vec3 normal, vec3 viewDirection,
 
     vec3 ambient  = pointLight.ambient * vec3(texture(diffuseTex1, TexCoords));
     vec3 diffuse  = pointLight.lightColour * diff * (vec3(texture(diffuseTex1, TexCoords)) + BaseColour);
-    vec3 specular = (material.specularTint * spec * vec3(texture(specularTex1, TexCoords))) * material.specularIntensity;
+    vec3 specular = (material.specularTint * spec * vec3(texture(specularTex1, TexCoords))) * material.shininess;
 
     float distance = length(pointLight.lightPos - fragPos);
     float attenuation = 1.0f / (pointLight.constant + (pointLight.linear * distance) + (pointLight.quadratic * pow(distance, 2)));
@@ -122,7 +122,7 @@ vec3 calculateSpotLight(SpotLight spotlight, vec3 normal, vec3 viewDirection, ve
 
         vec3 ambient  = spotlight.ambient * vec3(texture(diffuseTex1, TexCoords));
         vec3 diffuse  = spotlight.lightColour * diff * vec3(texture(diffuseTex1, TexCoords));
-        vec3 specular = (material.specularTint * spec * vec3(texture(specularTex1, TexCoords)) * material.specularIntensity);
+        vec3 specular = (material.specularTint * spec * vec3(texture(specularTex1, TexCoords)) * material.shininess);
 
         diffuse *= fadeIntensity;
         specular *= fadeIntensity;
