@@ -1,3 +1,4 @@
+#pragma once
 #include "shader.h"
 #include "glad/glad.h"
 
@@ -34,7 +35,7 @@ class Mesh {
 
         GLuint VAO;
 
-        Mesh(std::vector<Vertex> vertices, std::vector<GLuint> indices, std::vector<Texture> textures, Material material) {
+        Mesh(std::vector<Vertex> &vertices, std::vector<GLuint> &indices, std::vector<Texture> &textures, Material material) {
             this->vertices = vertices;
             this->indices = indices;
             this->textures = textures;
@@ -70,7 +71,6 @@ class Mesh {
             shader.uploadInt("material.specularRoughness", 4);
             shader.setFloat("material.shininess", material.shininess);
             shader.uploadUniformVector3f("material.specularTint", material.specular);
-
 
             glBindVertexArray(VAO);
             glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);

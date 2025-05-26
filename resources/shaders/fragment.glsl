@@ -13,55 +13,83 @@ uniform sampler2D specularTex1;
 uniform sampler2D specularTex2;
 uniform vec3 viewPos;
 
+struct Attenuation{
+
+    float constant;
+    float linear;
+    float quadratic;
+};
 struct Material{
 
     int specularRoughness;
     float shininess;
     vec3 specularTint;
-
 };
 uniform Material material;
 
-struct PointLight{
-    vec3 lightPos;
-
-    vec3 ambient;
-    vec3 lightColour;
-
-    float constant;
-    float linear;
-    float quadratic;
+struct Light{
+    vec3 colour;
+    vec3 position;
+    float ambientStrength;
+    float strength;
 };
-#define NR_POINT_LIGHTS 1
-uniform PointLight pointLights[NR_POINT_LIGHTS];
+
+struct PointLight{
+
+    Light parentLight;
+    Attenuation attenuation;
+};
 
 struct DirectionLight{
+    Light parentLight;
     vec3 direction;
     vec3 ambient;
     vec3 lightColour;
-
 };
-uniform DirectionLight directionLight;
 
 struct SpotLight{
 
+    Light parentLight;
     vec3 direction;
-    vec3 position;
 
-    vec3 ambient;
-    vec3 lightColour;
-
-    float constant;
-    float linear;
-    float quadratic;
+    Attenuation attenuation;
 
     float cutOffAngle;
     float outerCutOffAngle;
-
 };
+
+#define NR_DIRECTIONAL_LIGHT 1
+uniform DirectionLight directionLight;
+
+#define NR_POINT_LIGHTS 1
+uniform PointLight pointLights[NR_POINT_LIGHTS];
+
 #define NR_SPOT_LIGHTS 1
 uniform SpotLight spotlights[NR_SPOT_LIGHTS];
 
+vec3 calcLight(Light light, vec3 normal, vec3 viewDirection, vec3 fragPos, Attenuation attenuation){
+
+    vec3 unitLightDirection = normalize(light.position - fragPos);
+    vec3 specularReflectDirection = reflect(-unitLightDirection, normal);
+
+    float distance = length(light.position - fragPos);
+    float atten = 1.0f / (attenuation.constant + (attenuation.linear * distance) + (attenuation.quadratic * pow(distance, 2)));
+
+
+    float diff = max(dot(normal, unitLightDirection), 0.0f);
+    float spec = pow(max(dot(viewDirection, specularReflectDirection), 0.0f), material.specularRoughness);
+
+    vec3 ambient  = light.ambientStrength * vec3(texture(diffuseTex1, TexCoords));
+    vec3 diffuse  = light.colour * diff * (vec3(texture(diffuseTex1, TexCoords)));
+    vec3 specular = (material.specularTint * spec * vec3(texture(specularTex1, TexCoords))) * material.shininess;
+
+    ambient *= atten;
+    diffuse *= atten;
+    specular *= atten;
+
+    return ambient + diffuse + specular;
+
+}
 vec3 calculateDirectionalLight(DirectionLight directionLight, vec3 normal, vec3 viewDirection){
 
     vec3 unitDirectionalLightDirection = normalize(-directionLight.direction);
@@ -81,36 +109,19 @@ vec3 calculateDirectionalLight(DirectionLight directionLight, vec3 normal, vec3 
 
 vec3 calculatePointLight(PointLight pointLight, vec3 normal, vec3 viewDirection, vec3 fragPos){
 
-    vec3 unitLightDirection = normalize(pointLight.lightPos - fragPos);
+    return calcLight(pointLight.parentLight, normal, viewDirection, fragPos, pointLight.attenuation);
 
-    vec3 specularReflectDirection = reflect(-unitLightDirection, normal);
-
-    float diff = max(dot(normal, unitLightDirection), 0.0f);
-    float spec = pow(max(dot(viewDirection, specularReflectDirection), 0.0f), material.specularRoughness);
-
-    vec3 ambient  = pointLight.ambient * vec3(texture(diffuseTex1, TexCoords));
-    vec3 diffuse  = pointLight.lightColour * diff * (vec3(texture(diffuseTex1, TexCoords)) + BaseColour);
-    vec3 specular = (material.specularTint * spec * vec3(texture(specularTex1, TexCoords))) * material.shininess;
-
-    float distance = length(pointLight.lightPos - fragPos);
-    float attenuation = 1.0f / (pointLight.constant + (pointLight.linear * distance) + (pointLight.quadratic * pow(distance, 2)));
-
-    ambient *= attenuation;
-    diffuse *= attenuation;
-    specular *= attenuation;
-
-    return ambient + diffuse + specular;
 }
 vec3 calculateSpotLight(SpotLight spotlight, vec3 normal, vec3 viewDirection, vec3 fragPos){
 
-    vec3 unitLightDirection = normalize(spotlight.position - fragPos);
+    vec3 unitLightDirection = normalize(spotlight.parentLight.position - fragPos);
 
     vec3 specularReflectDirection = reflect(-unitLightDirection, normal);
 
     float theta = dot(unitLightDirection, normalize(-spotlight.direction));
 
-    float distance = length(spotlight.position - fragPos);
-    float attenuation = 1.0f / (spotlight.constant + (spotlight.linear * distance) + (spotlight.quadratic * pow(distance, 2)));
+    float distance = length(spotlight.parentLight.position - fragPos);
+    float attenuation = 1.0f / (spotlight.attenuation.constant + (spotlight.attenuation.linear * distance) + (spotlight.attenuation.quadratic * pow(distance, 2)));
 
     if(theta > spotlight.outerCutOffAngle){
 
@@ -120,8 +131,8 @@ vec3 calculateSpotLight(SpotLight spotlight, vec3 normal, vec3 viewDirection, ve
         float diff = max(dot(normal, unitLightDirection), 0.0f);
         float spec = pow(max(dot(viewDirection, specularReflectDirection), 0.0f), material.specularRoughness);
 
-        vec3 ambient  = spotlight.ambient * vec3(texture(diffuseTex1, TexCoords));
-        vec3 diffuse  = spotlight.lightColour * diff * vec3(texture(diffuseTex1, TexCoords));
+        vec3 ambient  = spotlight.parentLight.ambientStrength * vec3(texture(diffuseTex1, TexCoords));
+        vec3 diffuse  = spotlight.parentLight.colour * diff * vec3(texture(diffuseTex1, TexCoords));
         vec3 specular = (material.specularTint * spec * vec3(texture(specularTex1, TexCoords)) * material.shininess);
 
         diffuse *= fadeIntensity;
@@ -134,7 +145,7 @@ vec3 calculateSpotLight(SpotLight spotlight, vec3 normal, vec3 viewDirection, ve
         return ambient + diffuse + specular;
     }
 
-    return vec3(spotlight.ambient * vec3(texture(diffuseTex1, TexCoords))) * clamp(attenuation, 0.5f, 1.0f);
+    return vec3(spotlight.parentLight.ambientStrength * vec3(texture(diffuseTex1, TexCoords))) * clamp(attenuation, 0.5f, 1.0f);
 }
 
 void main()
@@ -153,6 +164,11 @@ void main()
 
         result += calculateSpotLight(spotlights[i], unitNormal, viewDirection, VertexPosWorld);
     }
+
+    float near = 0.1f;
+    float far = 100.0f;
+    float normalizedDeviceCoords = gl_FragCoord.z * 2.0f -1;
+    float linearDepth = ((2.0 * near * far) / (far + near - normalizedDeviceCoords * (far - near))) / far;
 
     FragColour = vec4(result, 1.0f);
 

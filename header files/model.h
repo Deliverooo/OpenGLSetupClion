@@ -9,7 +9,6 @@
 #include "mesh.h"
 #include "stb_image.h"
 
-
 struct aiMaterial;
 using namespace std;
 
@@ -17,7 +16,7 @@ std::vector<Texture> loadedTextures;
 
 class Model {
     public:
-        Model(string filepath) {
+        Model(const string &filepath) {
             loadModel(filepath);
         }
         void draw(Shader &shader) {
@@ -31,7 +30,7 @@ class Model {
         std::string directory;
         std::vector<Mesh> meshes;
 
-        GLuint loadTexture(const char* path, const std::string directory) {
+        GLuint loadTexture(const char* path, const std::string &directory) {
 
             string filename = string(path);
             filename = directory + '/' + filename;
@@ -55,7 +54,7 @@ class Model {
                 glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
                 glGenerateMipmap(GL_TEXTURE_2D);
 
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -72,7 +71,7 @@ class Model {
 
             return textureID;
         }
-        std::vector<Texture> loadMaterialTex(aiMaterial *material, aiTextureType type, std::string typeName) {
+        std::vector<Texture> loadMaterialTex(aiMaterial *material, const aiTextureType type, const std::string &typeName) {
 
             std::vector<Texture> textures;
             for (GLuint i = 0; i < material->GetTextureCount(type); i++) {
@@ -178,7 +177,7 @@ class Model {
 
         }
 
-        void loadModel(std::string filepath) {
+        void loadModel(const std::string &filepath) {
             Assimp::Importer importer;
             const aiScene *scene = importer.ReadFile(filepath, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenNormals);
 
