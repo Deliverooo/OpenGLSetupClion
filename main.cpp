@@ -21,6 +21,9 @@ void uploadPointLightUniforms(Shader &shader, int index, glm::vec3 &lightPos, fl
 void createSpotLight(Shader &shader, const int index, glm::vec3 &lightPos, glm::vec3 &lightDirection, float ambientStrength, glm::vec3 lightColour,
     float cutOffAngle, float outerCutOffAngle, float constant, float linear, float quadratic);
 
+void uploadDirectionLightUniforms(Shader &shader, const glm::vec3 &direction, float ambientStrength, glm::vec3 lightColour);
+GLuint loadCubemapTextures(std::vector<std::string> faces);
+
 #define log(x) std::cout << x << std::endl
 #define constexpr GLuint WIDTH = 1920;
 constexpr GLuint HEIGHT = 1080;
@@ -37,11 +40,11 @@ float lastX = static_cast<float>(WIDTH) / 2.0f;
 float lastY = static_cast<float>(HEIGHT) / 2.0f;
 bool firstMouse = true;
 
-Vector3f lightPos = glm::vec3(0.0f, 1.0f, 0.0f);
+Vector3f lightPos = glm::vec3(-2.0f, 1.0f, 0.0f);
 Vector3f lightPos2 = glm::vec3(3.0f, 1.0f, 3.0f);
 
 Vector3f modelItemPos = Vector3f(0.0f, 0.0f, 1.0f);
-glm::vec3 spotLightPos = glm::vec3(0.0f, 2.0f, 0.0f);
+glm::vec3 spotLightPos = glm::vec3(2.0f, 2.0f, 0.0f);
 glm::vec3 spotLightDirection = glm::vec3(0.0f, -1.0f, 0.0f);
 
 Vector3f spotLightCol = Vector3f(0.5f);
@@ -92,10 +95,12 @@ int main()
         cout << cacheText << endl;
     }
 
-    cacheCameraPos.x = std::stof(cacheText.substr(0, cacheText.find_first_of(',')).c_str());
-    cacheCameraPos.y = std::stof(cacheText.substr(cacheText.find_first_of(',') + 1, 14).c_str());
-    cacheCameraPos.z = std::stof(cacheText.substr(14, 21).c_str());
-    camera.cameraPosition = cacheCameraPos;
+    // cacheCameraPos.x = std::stof(cacheText.substr(0, cacheText.find_first_of(',')).c_str());
+    // cacheCameraPos.y = std::stof(cacheText.substr(cacheText.find_first_of(',') + 1, 14).c_str());
+    // cacheCameraPos.z = std::stof(cacheText.substr(14, 21).c_str());
+
+    // camera.cameraPosition = cacheCameraPos;
+    camera.cameraPosition = glm::vec3(0.0f, 0.0f, 0.0f);
 
     // build and compile our shader program
     Shader shader("resources/shaders/vertex.glsl", "resources/shaders/fragment.glsl"); // you can name your shader files however you like
@@ -130,21 +135,28 @@ int main()
     Model orboModel("resources/models/orbo/Orbo_Obj.obj");
     Model spotModel("resources/models/orbo/Orbo_Obj.obj");
     Model floorTiles("resources/models/floor Tiles/tiles.obj");
-    Model lightModel("resources/models/orbo/Orbo_Obj.obj");
     Model trebModel("resources/models/treb/Trebushay.obj");
     Model vecModel("resources/models/vec/Vector_001.obj");
     Model pcModel("resources/models/pc/pc.obj");
+    Model ballModel("resources/models/ball/ball.obj", false);
+    Model terrainModel("resources/models/terrain/Terrain.obj", false);
+
+    Transform terrainTransform(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f));
+    Entity terrainEntity(terrainTransform, terrainModel);
+
+    Transform ballTransform(glm::vec3(0.0f, 1.5f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f));
+    Entity ballEntity(ballTransform, ballModel);
 
     Transform pcTransform(glm::vec3(3.0f, 0.0f, 3.0f), glm::vec3(0.0f, 4.0f, 0.0f), glm::vec3(0.5f));
     Entity pcEntity(pcTransform, pcModel);
 
-    Transform npcOrboTransform(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
+    Transform npcOrboTransform(glm::vec3(2.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
     Entity npcOrboEntity(npcOrboTransform, orboModel);
 
     Transform vecTransform(glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
     Entity vecEntity(vecTransform, vecModel);
 
-    Transform trebTransform(glm::vec3(0.0f, 0.0f, 5.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.1f));
+    Transform trebTransform(glm::vec3(-2.0f, 1.75f, 9.5f), glm::vec3(0.0f, 0.01f, 0.0f), glm::vec3(0.1f));
     Entity trebEntity(trebTransform, trebModel);
 
     Transform orbotransform(glm::vec3(2.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
@@ -170,7 +182,6 @@ int main()
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
 
-
     GLuint rbo;
     glGenRenderbuffers(1, &rbo);
     glBindRenderbuffer(GL_RENDERBUFFER, rbo);
@@ -183,8 +194,18 @@ int main()
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+    std::vector<std::string> cubeMapTexturePaths = {"resources/models/orbo/cinema.jpg",
+                                                "resources/models/orbo/diffuseTex2.png",
+                                                "resources/models/orbo/diffuseTex2.png",
+                                                "resources/models/floor Tiles/diffuseTex.png",
+                                                "resources/models/floor Tiles/plainTex.png",
+                                                "resources/models/floor Tiles/specularTex.png"};
+
+
 
     glEnable(GL_CULL_FACE);
+
+    float ballVelocity = 2.0f;
 
     // render loop
     while (!glfwWindowShouldClose(window))
@@ -208,11 +229,14 @@ int main()
         shader.uploadUniformMatrix4f("view", view);
         shader.uploadUniformVector3f("viewPos", camera.cameraFront);
 
-        uploadPointLightUniforms(shader, 0, lightPos, 0.1f, glm::vec3(0.4f), 1.0f, 0.09f, 0.032f);
+        uploadDirectionLightUniforms(shader, glm::vec3(0.0f, -1.0f, 0.2f), 0.3f, glm::vec3(1.0f, 1.0f, 1.0f));
 
-        createSpotLight(shader, 0, spotLightPos, spotLightDirection, 0.1f, spotLightCol,
+        uploadPointLightUniforms(shader, 0, lightPos, 0.05f, glm::vec3(0.2f), 1.0f, 0.09f, 0.032f);
+
+        createSpotLight(shader, 0, spotLightPos, spotLightDirection, 0.05f, spotLightCol,
             cos(glm::radians(35.0f)), cos(glm::radians(40.0f)), 1.0f, 0.09f, 0.032f);
 
+        ballEntity.draw(shader);
 
         orboEntity.draw(shader);
         if (orboEntity.transform.scale.z <= 1.5f) {
@@ -229,23 +253,12 @@ int main()
             orboEntity.transform.rotation.z += deltaTime * 0.5f;
         }
 
-        floorEntity.draw(shader);
+        // floorEntity.draw(shader);
         trebEntity.draw(shader);
         pcEntity.draw(shader);
 
-        glm::mat4 light = glm::mat4(1.0f);
-        OrbitLight(light, lightPos, glm::vec3(0.0f, 1.0f, 0.0f), 3.0f, -1);
-        shader.uploadUniformMatrix4f("model", light);
-        lightModel.draw(shader);
-
-
         npcOrboEntity.draw(shader);
-
-        glm::mat4 spotLight = glm::mat4(1.0f);
-
-        OrbitLight(spotLight, spotLightPos, glm::vec3(0.0f, 1.0f, 0.0f), 1.0f, 1);
-        shader.uploadUniformMatrix4f("model", spotLight);
-        spotModel.draw(shader);
+        terrainEntity.draw(shader);
 
         // now bind back to default framebuffer and draw a quad plane with the attached framebuffer colour texture
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -255,7 +268,9 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT);
 
         screenShader.use();
-
+        screenShader.setFloat("time", (float)glfwGetTime());
+        screenShader.setFloat("distance", glm::distance(npcOrboEntity.transform.position, camera.cameraPosition));
+        log(1/glm::distance(npcOrboEntity.transform.position, camera.cameraPosition));
         glBindVertexArray(quadVAO);
         glBindTexture(GL_TEXTURE_2D, texture);	// use the colour attachment texture as the texture of the quad plane
         glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -361,4 +376,40 @@ void uploadPointLightUniforms(Shader &shader, const int index, Vector3f &lightPo
     shader.setFloat("pointLights[" + std::to_string(index) + "].attenuation.constant", constant);
     shader.setFloat("pointLights[" + std::to_string(index) + "].attenuation.linear", linear);
     shader.setFloat("pointLights[" + std::to_string(index) + "].attenuation.quadratic", quadratic);
+}
+void uploadDirectionLightUniforms(Shader &shader, const glm::vec3 &direction, float ambientStrength, glm::vec3 lightColour) {
+
+    shader.uploadUniformVector3f("directionLight.direction", direction);
+    shader.uploadUniformVector3f("directionLight.parentLight.colour", lightColour);
+    shader.setFloat("directionLight.parentLight.ambientStrength", ambientStrength);
+
+}
+GLuint loadCubemapTextures(std::vector<std::string> faces) {
+
+    unsigned int textureID;
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+    int width, height, nrComponents;
+    for (unsigned int i = 0; i < faces.size(); i++)
+    {
+        unsigned char *data = stbi_load(faces[i].c_str(), &width, &height, &nrComponents, 0);
+        if (data)
+        {
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+            stbi_image_free(data);
+        }
+        else
+        {
+            std::cout << "Cubemap texture failed to load at path: " << faces[i] << std::endl;
+            stbi_image_free(data);
+        }
+    }
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    return textureID;
 }

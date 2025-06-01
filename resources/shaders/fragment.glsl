@@ -6,12 +6,13 @@ in vec3 VertexPosWorld;
 in vec3 BaseColour;
 
 out vec4 FragColour;
-
 uniform sampler2D diffuseTex1;
-uniform sampler2D diffuseTex2;
 uniform sampler2D specularTex1;
+uniform sampler2D diffuseTex2;
 uniform sampler2D specularTex2;
+
 uniform vec3 viewPos;
+uniform bool useTex;
 
 struct Attenuation{
 
@@ -21,6 +22,7 @@ struct Attenuation{
 };
 struct Material{
 
+    vec3 baseColour;
     int specularRoughness;
     float shininess;
     vec3 specularTint;
@@ -43,8 +45,7 @@ struct PointLight{
 struct DirectionLight{
     Light parentLight;
     vec3 direction;
-    vec3 ambient;
-    vec3 lightColour;
+
 };
 
 struct SpotLight{
@@ -79,9 +80,20 @@ vec3 calcLight(Light light, vec3 normal, vec3 viewDirection, vec3 fragPos, Atten
     float diff = max(dot(normal, unitLightDirection), 0.0f);
     float spec = pow(max(dot(viewDirection, specularReflectDirection), 0.0f), material.specularRoughness);
 
-    vec3 ambient  = light.ambientStrength * vec3(texture(diffuseTex1, TexCoords));
-    vec3 diffuse  = light.colour * diff * (vec3(texture(diffuseTex1, TexCoords)));
-    vec3 specular = (material.specularTint * spec * vec3(texture(specularTex1, TexCoords))) * material.shininess;
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
+
+    if(!useTex){
+        ambient  = light.ambientStrength * vec3(material.baseColour);
+        diffuse  = light.colour * diff * (vec3(material.baseColour));
+        specular = (material.specularTint * spec * vec3(material.baseColour)) * material.shininess;
+    } else {
+
+        ambient  = light.ambientStrength * vec3(texture(diffuseTex1, TexCoords));
+        diffuse  = light.colour * diff * (vec3(texture(diffuseTex1, TexCoords)));
+        specular = (material.specularTint * spec * vec3(texture(specularTex1, TexCoords))) * material.shininess;
+    }
 
     ambient *= atten;
     diffuse *= atten;
@@ -100,9 +112,20 @@ vec3 calculateDirectionalLight(DirectionLight directionLight, vec3 normal, vec3 
 
     float spec = pow(max(dot(viewDirection, specularReflectDirection), 0.0f), material.specularRoughness);
 
-    vec3 ambient  = directionLight.ambient * vec3(texture(diffuseTex1, TexCoords));
-    vec3 diffuse  = directionLight.lightColour * diff * vec3(texture(diffuseTex1, TexCoords));
-    vec3 specular = (material.specularTint * spec * vec3(texture(specularTex1, TexCoords))) * material.shininess;
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
+
+    if(!useTex){
+        ambient  = directionLight.parentLight.ambientStrength * vec3(material.baseColour);
+        diffuse  = directionLight.parentLight.colour * diff * (vec3(material.baseColour));
+        specular = (material.specularTint * spec * vec3(material.baseColour)) * material.shininess;
+    } else {
+        ambient  = directionLight.parentLight.ambientStrength * vec3(texture(diffuseTex1, TexCoords));
+        diffuse  = directionLight.parentLight.strength * diff * vec3(texture(diffuseTex1, TexCoords));
+        specular = (material.specularTint * spec * vec3(texture(specularTex1, TexCoords))) * material.shininess;
+    }
+
 
     return ambient + diffuse + specular;
 }
@@ -131,9 +154,19 @@ vec3 calculateSpotLight(SpotLight spotlight, vec3 normal, vec3 viewDirection, ve
         float diff = max(dot(normal, unitLightDirection), 0.0f);
         float spec = pow(max(dot(viewDirection, specularReflectDirection), 0.0f), material.specularRoughness);
 
-        vec3 ambient  = spotlight.parentLight.ambientStrength * vec3(texture(diffuseTex1, TexCoords));
-        vec3 diffuse  = spotlight.parentLight.colour * diff * vec3(texture(diffuseTex1, TexCoords));
-        vec3 specular = (material.specularTint * spec * vec3(texture(specularTex1, TexCoords)) * material.shininess);
+        vec3 ambient;
+        vec3 diffuse;
+        vec3 specular;
+
+        if(!useTex){
+            ambient  = spotlight.parentLight.ambientStrength * vec3(material.baseColour);
+            diffuse  = spotlight.parentLight.colour * diff * vec3(material.baseColour);
+            specular = (material.specularTint * spec * vec3(material.baseColour) * material.shininess);
+        } else {
+            ambient  = spotlight.parentLight.ambientStrength * vec3(texture(diffuseTex1, TexCoords));
+            diffuse  = spotlight.parentLight.colour * diff * vec3(texture(diffuseTex1, TexCoords));
+            specular = (material.specularTint * spec * vec3(texture(specularTex1, TexCoords))* material.shininess);
+        }
 
         diffuse *= fadeIntensity;
         specular *= fadeIntensity;
@@ -145,7 +178,11 @@ vec3 calculateSpotLight(SpotLight spotlight, vec3 normal, vec3 viewDirection, ve
         return ambient + diffuse + specular;
     }
 
-    return vec3(spotlight.parentLight.ambientStrength * vec3(texture(diffuseTex1, TexCoords))) * clamp(attenuation, 0.5f, 1.0f);
+    if(!useTex){
+        return vec3(spotlight.parentLight.ambientStrength * vec3(material.baseColour)) * clamp(attenuation, 0.5f, 1.0f);
+    } else{
+        return vec3(spotlight.parentLight.ambientStrength * vec3(texture(diffuseTex1, TexCoords))) * clamp(attenuation, 0.5f, 1.0f);
+    }
 }
 
 void main()
@@ -154,7 +191,7 @@ void main()
     vec3 unitNormal = normalize(Normal);
     vec3 viewDirection = normalize(viewPos - VertexPosWorld);
 
-    vec3 result = vec3(0.0f);
+    vec3 result = calculateDirectionalLight(directionLight, unitNormal, viewDirection);
 
     for(int i = 0; i < NR_POINT_LIGHTS; i++){
 
@@ -171,6 +208,5 @@ void main()
     float linearDepth = ((2.0 * near * far) / (far + near - normalizedDeviceCoords * (far - near))) / far;
 
     FragColour = vec4(result, 1.0f);
-
 
 }

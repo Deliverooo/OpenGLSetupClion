@@ -2,9 +2,10 @@
 # www.blender.org
 
 newmtl DefaultMaterial
-Ns 0.12
+Ns 0.1
 Ka 1.000000 1.000000 1.000000
-Ks 0.4 1.0 0.0
+Kd 1.0 1.0 1.0
+Ks 1.0 1.0 1.0
 Ke 0.000000 0.000000 0.000000
 Ni 1.500000
 d 1.000000
@@ -12,3 +13,4 @@ d 1.000000
 illum 3
 
 map_Kd diffuseTex2.png
+map_Ks diffuseTex2.png

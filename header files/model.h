@@ -16,14 +16,18 @@ std::vector<Texture> loadedTextures;
 
 class Model {
     public:
+        Model(const string &filepath, bool useTextures) {
+            loadModel(filepath, useTextures);
+        }
         Model(const string &filepath) {
-            loadModel(filepath);
+            loadModel(filepath, true);
         }
         void draw(Shader &shader) {
             for (GLuint i = 0; i < meshes.size(); i++) {
                 meshes[i].draw(shader);
             }
         }
+
 
     private:
 
@@ -71,18 +75,32 @@ class Model {
 
             return textureID;
         }
-        std::vector<Texture> loadMaterialTex(aiMaterial *material, const aiTextureType type, const std::string &typeName) {
+        std::vector<Texture> loadMaterialTex(aiMaterial *material, aiTextureType type, std::string typeName) {
 
             std::vector<Texture> textures;
             for (GLuint i = 0; i < material->GetTextureCount(type); i++) {
                 aiString str;
                 material->GetTexture(type, i, &str);
-                Texture texture;
-                texture.id = loadTexture(str.C_Str(), directory);
-                texture.type = typeName;
-                texture.path = str;
-                textures.push_back(texture);
-                std::cout << "Loaded texture with path: " << texture.path.C_Str() << std::endl;
+                bool skip = false;
+                for (GLuint j = 0; j < loadedTextures.size(); j++) {
+
+                    if (std::strcmp(loadedTextures[j].path.C_Str(), str.C_Str()) == 0) {
+
+                        textures.push_back(loadedTextures[j]);
+                        skip = true;
+                        break;
+                    }
+                }
+                if (!skip) {
+                    Texture texture;
+                    texture.id = loadTexture(str.C_Str(), directory);
+                    texture.type = typeName;
+                    texture.path = str;
+                    textures.push_back(texture);
+                    loadedTextures.push_back(texture);
+
+                }
+
             }
             return textures;
         }
@@ -107,7 +125,7 @@ class Model {
             return material;
         }
 
-        Mesh processMesh(aiMesh *mesh, const aiScene *scene) {
+        Mesh processMesh(aiMesh *mesh, const aiScene *scene, bool useTextures) {
 
             //for the input mesh, it will create a list of vertices, indies and textures for it
             std::vector<Vertex> vertices;
@@ -147,37 +165,39 @@ class Model {
                     indices.push_back(face.mIndices[j]);
                 }
             }
+            if (useTextures) {
 
-            if (mesh->mMaterialIndex >= 0) {
                 aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
-                std::vector<Texture> diffuseTextures = loadMaterialTex(material, aiTextureType_DIFFUSE, "diffuseTex");
 
-                textures.insert(textures.end(), diffuseTextures.begin(), diffuseTextures.end());
                 std::vector<Texture> specularTextures = loadMaterialTex(material, aiTextureType_SPECULAR, "specularTex");
-
                 textures.insert(textures.end(), specularTextures.begin(), specularTextures.end());
+
+                std::vector<Texture> diffuseTextures = loadMaterialTex(material, aiTextureType_DIFFUSE, "diffuseTex");
+                textures.insert(textures.end(), diffuseTextures.begin(), diffuseTextures.end());
+
+
             }
+
             aiMaterial *materialc = scene->mMaterials[mesh->mMaterialIndex];
             Material mat = loadMaterial(materialc);
 
-            return Mesh(vertices, indices, textures, mat);
+            return Mesh(vertices, indices, textures, mat, useTextures);
         }
 
-
         //this function takes in a node and recursively creates a mesh for each of its children, then adds it to the mesh
-        void processNode(aiNode *node, const aiScene *scene) {
+        void processNode(aiNode *node, const aiScene *scene, bool useTextures) {
 
             for (GLuint i = 0; i < node->mNumMeshes; i++) {
                 aiMesh *mesh = scene->mMeshes[node->mMeshes[i]];
-                meshes.push_back(processMesh(mesh, scene));
+                meshes.push_back(processMesh(mesh, scene, useTextures));
             }
             for (GLuint i = 0; i < node->mNumChildren; i++) {
-                processNode(node->mChildren[i], scene);
+                processNode(node->mChildren[i], scene, useTextures);
             }
 
         }
 
-        void loadModel(const std::string &filepath) {
+        void loadModel(const std::string &filepath, bool useTextures) {
             Assimp::Importer importer;
             const aiScene *scene = importer.ReadFile(filepath, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenNormals);
 
@@ -189,7 +209,7 @@ class Model {
             //mesh vertex list
             directory = filepath.substr(0, filepath.find_last_of('/'));
 
-            processNode(scene->mRootNode, scene);
+            processNode(scene->mRootNode, scene, useTextures);
 
         }
 };

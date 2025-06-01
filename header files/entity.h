@@ -29,5 +29,6 @@ class Entity {
             this->model.draw(shader);
         }
 
+
 };
 #endif //ENTITY_H
