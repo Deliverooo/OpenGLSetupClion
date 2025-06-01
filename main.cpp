@@ -105,7 +105,6 @@ int main()
     // build and compile our shader program
     Shader shader("resources/shaders/vertex.glsl", "resources/shaders/fragment.glsl"); // you can name your shader files however you like
     Shader screenShader("resources/shaders/postProcessVertex.glsl", "resources/shaders/postProcessFragment.glsl");
-    Shader outlineShader("resources/shaders/outlineVertex.glsl", "resources/shaders/outlineFragment.glsl");
 
     float quadVertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
         // positions   // texCoords
@@ -133,10 +132,9 @@ int main()
     shader.use();
 
     Model orboModel("resources/models/orbo/Orbo_Obj.obj");
-    Model spotModel("resources/models/orbo/Orbo_Obj.obj");
-    Model floorTiles("resources/models/floor Tiles/tiles.obj");
+    // Model floorTiles("resources/models/floor Tiles/tiles.obj");
     Model trebModel("resources/models/treb/Trebushay.obj");
-    Model vecModel("resources/models/vec/Vector_001.obj");
+    Model vecModel("resources/models/vec/Vector_001.obj", false);
     Model pcModel("resources/models/pc/pc.obj");
     Model ballModel("resources/models/ball/ball.obj", false);
     Model terrainModel("resources/models/terrain/Terrain.obj", false);
@@ -150,7 +148,7 @@ int main()
     Transform pcTransform(glm::vec3(3.0f, 0.0f, 3.0f), glm::vec3(0.0f, 4.0f, 0.0f), glm::vec3(0.5f));
     Entity pcEntity(pcTransform, pcModel);
 
-    Transform npcOrboTransform(glm::vec3(2.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
+    Transform npcOrboTransform(glm::vec3(2.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.75f));
     Entity npcOrboEntity(npcOrboTransform, orboModel);
 
     Transform vecTransform(glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
@@ -162,8 +160,8 @@ int main()
     Transform orbotransform(glm::vec3(2.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
     Entity orboEntity(orbotransform, orboModel);
 
-    Transform floortransform(glm::vec3(0.0f, -0.5f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
-    Entity floorEntity(floortransform, floorTiles);
+    // Transform floortransform(glm::vec3(0.0f, -0.5f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
+    // Entity floorEntity(floortransform, floorTiles);
 
     log(camera.cameraPosition.x << camera.cameraPosition.y << camera.cameraPosition.z);
 
@@ -194,19 +192,28 @@ int main()
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    std::vector<std::string> cubeMapTexturePaths = {"resources/models/orbo/cinema.jpg",
-                                                "resources/models/orbo/diffuseTex2.png",
-                                                "resources/models/orbo/diffuseTex2.png",
-                                                "resources/models/floor Tiles/diffuseTex.png",
-                                                "resources/models/floor Tiles/plainTex.png",
-                                                "resources/models/floor Tiles/specularTex.png"};
-
+    // std::vector<std::string> cubeMapTexturePaths = {"resources/models/orbo/cinema.jpg",
+    //                                             "resources/models/orbo/diffuseTex2.png",
+    //                                             "resources/models/orbo/diffuseTex2.png",
+    //                                             "resources/models/floor Tiles/diffuseTex.png",
+    //                                             "resources/models/floor Tiles/plainTex.png",
+    //                                             "resources/models/floor Tiles/specularTex.png"};
 
 
     glEnable(GL_CULL_FACE);
 
     float ballVelocity = 2.0f;
+    enum heldItem {
 
+        NONE,
+        ORBO,
+        VECTOR
+    };
+
+    bool pressed = false;
+
+    bool in_hand = false;
+    heldItem item = NONE;
     // render loop
     while (!glfwWindowShouldClose(window))
     {
@@ -253,6 +260,47 @@ int main()
             orboEntity.transform.rotation.z += deltaTime * 0.5f;
         }
 
+
+        if (in_hand && glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
+            in_hand = false;
+            item = NONE;
+        }
+        if (glm::length(vecEntity.transform.position - camera.cameraPosition) < 2
+            && glm::dot(camera.cameraFront, glm::normalize(vecEntity.transform.position - camera.cameraPosition)) > 0.9f
+            && glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
+            in_hand = true;
+            item = VECTOR;
+        }
+
+        if (glm::length(npcOrboEntity.transform.position - camera.cameraPosition) < 2
+            && glm::dot(camera.cameraFront, glm::normalize(npcOrboEntity.transform.position - camera.cameraPosition)) > 0.85f
+            && glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
+            in_hand = true;
+            item = ORBO;
+        }
+
+        if (item == ORBO) {
+            npcOrboEntity.transform.position = camera.cameraPosition + camera.cameraFront - glm::vec3(0.0f, 0.6f, 0.0f);
+        } else if (item == VECTOR) {
+            vecEntity.transform.position = camera.cameraPosition + camera.cameraFront;
+        } else {
+            item = NONE;
+        }
+
+        if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
+            in_hand = false;
+            item = NONE;
+        }
+
+        std::cout << in_hand << std::endl;
+
+
+        if (glfwGetKey(window, GLFW_KEY_E) == GLFW_RELEASE) {
+            in_hand = false;
+        }
+        // std::cout << "dot: -> " << glm::dot(camera.cameraFront, glm::normalize(vecEntity.transform.position - camera.cameraPosition)) << std::endl;
+
+        vecEntity.draw(shader);
         // floorEntity.draw(shader);
         trebEntity.draw(shader);
         pcEntity.draw(shader);

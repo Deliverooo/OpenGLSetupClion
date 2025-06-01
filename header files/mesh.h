@@ -64,7 +64,6 @@ class Mesh {
                         num = std::to_string(diffuseNr++);
                     } else if (name == "specularTex") {
                         num = std::to_string(specularNr++);
-                        std::cout << "loaded specular tex" << std::endl;
                     } else {
                         std::cout << name << " is not a valid texture type!" << std::endl;
                     }

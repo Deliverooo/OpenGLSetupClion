@@ -1,21 +1,15 @@
 cmake_minimum_required(VERSION 3.7)
-project(OpenGLSetup)
+project(OpenGLTing)
 
 set(CMAKE_CXX_STANDARD 11)
 
 set(SOURCE_FILES main.cpp GLAD/src/glad.c
-        "header files/chunk.cpp"
-        "header files/chunk.h"
         "header files/shader.h"
-        "header files/texture.h"
         "header files/stb_image.h"
         "header files/stb_image.cpp"
         "header files/camera.h"
-        "header files/block.h"
         "header files/mesh.h"
-        "header files/vao.h"
         "header files/model.h"
-        "header files/terrain.h"
         "header files/transform.h"
         "header files/entity.h")
 
@@ -26,7 +20,6 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${dir}/build)
 include_directories(GLAD/include)
 include_directories(glm/include)
 include_directories(include)
-
 
 #Add deps
 add_subdirectory(dependencies)
