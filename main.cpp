@@ -59,13 +59,14 @@ int main()
 {
     // glfw: initialize and configure
     glfwInit();
+
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_SAMPLES, 4);
 
     // glfw window creation
-    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "All hail Orbo", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "All hail Orbo", glfwGetPrimaryMonitor(), nullptr);
     if (window == nullptr)
     {
         std::cerr << "Failed to create GLFW window" << std::endl;
@@ -289,8 +290,12 @@ int main()
             npcOrboEntity.transform.position = camera.cameraPosition + camera.cameraFront - glm::vec3(0.0f, 0.6f, 0.0f);
         } else if (item == VECTOR) {
             vecEntity.transform.position = camera.cameraPosition + camera.cameraFront;
+            npcOrboEntity.transform.rotation.y += glfwGetTime() * 0.001f;
+
         } else {
             item = NONE;
+            npcOrboEntity.transform.rotation.y += deltaTime;
+
         }
 
         if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
