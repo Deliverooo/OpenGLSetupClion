@@ -283,6 +283,8 @@ int main()
             item = ORBO;
         }
 
+        //hey orbo...
+
         if (item == ORBO) {
             npcOrboEntity.transform.position = camera.cameraPosition + camera.cameraFront - glm::vec3(0.0f, 0.6f, 0.0f);
         } else if (item == VECTOR) {
