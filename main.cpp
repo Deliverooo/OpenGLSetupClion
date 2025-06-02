@@ -261,10 +261,13 @@ int main()
             orboEntity.transform.rotation.z += deltaTime * 0.5f;
         }
 
+
+
         //big orbo
         if (in_hand && glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
             in_hand = false;
             item = NONE;
+            std::cout << "hand" << std::endl;
         }
         if (glm::length(vecEntity.transform.position - camera.cameraPosition) < 2
             && glm::dot(camera.cameraFront, glm::normalize(vecEntity.transform.position - camera.cameraPosition)) > 0.9f
