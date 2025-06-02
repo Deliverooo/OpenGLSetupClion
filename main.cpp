@@ -261,7 +261,7 @@ int main()
             orboEntity.transform.rotation.z += deltaTime * 0.5f;
         }
 
-
+        //big orbo
         if (in_hand && glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
             in_hand = false;
             item = NONE;
