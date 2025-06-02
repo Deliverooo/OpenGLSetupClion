@@ -24,7 +24,7 @@ include_directories(include)
 #Add deps
 add_subdirectory(dependencies)
 
-add_executable(OpenGLSetup ${SOURCE_FILES} ${HEADER_FILES})
-target_link_libraries(OpenGLSetup glfw)
+add_executable(OpenGL_Ting ${SOURCE_FILES} ${HEADER_FILES})
+target_link_libraries(OpenGL_Ting glfw)
 
-target_link_libraries(OpenGLSetup C:/Users/oocon/CLionProjects/Engine3d/lib/assimp/assimp-vc143-mt.lib)
+target_link_libraries(OpenGL_Ting ${CMAKE_CURRENT_SOURCE_DIR}/lib/assimp/assimp-vc143-mt.lib)
