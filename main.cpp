@@ -212,6 +212,7 @@ int main()
 
     bool pressed = false;
 
+    std::cout << "started" << std::endl;
     bool in_hand = false;
     heldItem item = NONE;
     // render loop
