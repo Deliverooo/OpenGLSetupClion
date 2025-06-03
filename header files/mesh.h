@@ -32,16 +32,13 @@ class Mesh {
         std::vector<GLuint> indices;
         std::vector<Texture> textures;
         Material material;
-        bool useTextures;
 
         GLuint VAO;
 
-        Mesh(std::vector<Vertex> &vertices, std::vector<GLuint> &indices, std::vector<Texture> textures, Material material, bool useTextures) {
+        Mesh(std::vector<Vertex> &vertices, std::vector<GLuint> &indices, std::vector<Texture> textures) {
             this->vertices = vertices;
             this->indices = indices;
             this->textures = textures;
-            this->material = material;
-            this->useTextures = useTextures;
 
             prepareMesh();
         }
@@ -50,34 +47,31 @@ class Mesh {
 
             GLuint diffuseNr = 1;
             GLuint specularNr = 1;
+            GLuint normalNr = 1;
+            GLuint heightNr = 1;
 
-            shader.setFloat("useTex", useTextures);
-            if(useTextures) {
+            for (GLuint i = 0; i < textures.size(); i++) {
+                glActiveTexture(GL_TEXTURE0 + i);
 
-                for (GLuint i = 0; i < textures.size(); i++) {
-
-                    glActiveTexture(GL_TEXTURE0 + i);
-
-                    std::string num;
-                    std::string name = textures[i].type;
-                    if (name == "diffuseTex") {
-                        num = std::to_string(diffuseNr++);
-                    } else if (name == "specularTex") {
-                        num = std::to_string(specularNr++);
-                    } else {
-                        std::cout << name << " is not a valid texture type!" << std::endl;
-                    }
-                    glUniform1i(glGetUniformLocation(shader.ID, (name + num).c_str()), i);
-
-                    glBindTexture(GL_TEXTURE_2D, textures[i].id);
+                std::string num;
+                std::string name = textures[i].type;
+                if (name == "diffuseTex") {
+                    num = std::to_string(diffuseNr++);
+                } else if (name == "specularTex") {
+                    num = std::to_string(specularNr++);
+                } else if (name == "normalTex") {
+                    num = std::to_string(normalNr++);
+                } else if (name == "heightTex") {
+                    num = std::to_string(heightNr++);
+                } else {
+                    std::cout << name << " is not a valid texture type!" << std::endl;
                 }
+                glUniform1i(glGetUniformLocation(shader.ID, (name + num).c_str()), i);
 
-            } else {
-                shader.uploadUniformVector3f("material.baseColour", material.diffuse);
+                shader.setFloat("shininess", 4);
+                glBindTexture(GL_TEXTURE_2D, textures[i].id);
             }
-            shader.uploadInt("material.specularRoughness", 32);
-            shader.setFloat("material.shininess", material.shininess);
-            shader.uploadUniformVector3f("material.specularTint", material.specular);
+
 
             glBindVertexArray(VAO);
             glDrawElements(GL_TRIANGLES, static_cast<unsigned int>(indices.size()), GL_UNSIGNED_INT, 0);

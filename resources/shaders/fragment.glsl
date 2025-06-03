@@ -3,13 +3,14 @@
 in vec2 TexCoords;
 in vec3 Normal;
 in vec3 VertexPosWorld;
-in vec3 BaseColour;
 
 out vec4 FragColour;
 uniform sampler2D diffuseTex1;
 uniform sampler2D specularTex1;
 uniform sampler2D diffuseTex2;
 uniform sampler2D specularTex2;
+
+uniform samplerCube skybox;
 
 uniform vec3 viewPos;
 uniform bool useTex;
@@ -146,13 +147,13 @@ vec3 calculateSpotLight(SpotLight spotlight, vec3 normal, vec3 viewDirection, ve
     float distance = length(spotlight.parentLight.position - fragPos);
     float attenuation = 1.0f / (spotlight.attenuation.constant + (spotlight.attenuation.linear * distance) + (spotlight.attenuation.quadratic * pow(distance, 2)));
 
+    float diff = max(dot(normal, unitLightDirection), 0.0f);
+    float spec = pow(max(dot(viewDirection, specularReflectDirection), 0.0f), material.specularRoughness);
+
     if(theta > spotlight.outerCutOffAngle){
 
         float epsilon = spotlight.cutOffAngle - spotlight.outerCutOffAngle;
         float fadeIntensity = smoothstep(0.0f, 1.0f, ((theta - spotlight.outerCutOffAngle) / epsilon));
-
-        float diff = max(dot(normal, unitLightDirection), 0.0f);
-        float spec = pow(max(dot(viewDirection, specularReflectDirection), 0.0f), material.specularRoughness);
 
         vec3 ambient;
         vec3 diffuse;
@@ -161,7 +162,7 @@ vec3 calculateSpotLight(SpotLight spotlight, vec3 normal, vec3 viewDirection, ve
         if(!useTex){
             ambient  = spotlight.parentLight.ambientStrength * vec3(material.baseColour);
             diffuse  = spotlight.parentLight.colour * diff * vec3(material.baseColour);
-            specular = (material.specularTint * spec * vec3(material.baseColour) * material.shininess);
+            specular = (material.specularTint * spec * vec3(material.baseColour)) * material.shininess;
         } else {
             ambient  = spotlight.parentLight.ambientStrength * vec3(texture(diffuseTex1, TexCoords));
             diffuse  = spotlight.parentLight.colour * diff * vec3(texture(diffuseTex1, TexCoords));
@@ -179,7 +180,7 @@ vec3 calculateSpotLight(SpotLight spotlight, vec3 normal, vec3 viewDirection, ve
     }
 
     if(!useTex){
-        return vec3(spotlight.parentLight.ambientStrength * vec3(material.baseColour)) * clamp(attenuation, 0.5f, 1.0f);
+        return vec3(spotlight.parentLight.ambientStrength * vec3(material.baseColour)) * (material.specularTint * spec) * clamp(attenuation, 0.5f, 1.0f);
     } else{
         return vec3(spotlight.parentLight.ambientStrength * vec3(texture(diffuseTex1, TexCoords))) * clamp(attenuation, 0.5f, 1.0f);
     }
@@ -187,9 +188,8 @@ vec3 calculateSpotLight(SpotLight spotlight, vec3 normal, vec3 viewDirection, ve
 
 void main()
 {
-
     vec3 unitNormal = normalize(Normal);
-    vec3 viewDirection = normalize(viewPos - VertexPosWorld);
+    vec3 viewDirection = normalize(VertexPosWorld - viewPos);
 
     vec3 result = calculateDirectionalLight(directionLight, unitNormal, viewDirection);
 
@@ -207,6 +207,8 @@ void main()
     float normalizedDeviceCoords = gl_FragCoord.z * 2.0f -1;
     float linearDepth = ((2.0 * near * far) / (far + near - normalizedDeviceCoords * (far - near))) / far;
 
-    FragColour = vec4(result, 1.0f);
+    vec3 refraction = refract(viewDirection, unitNormal, 0.658);
+    vec3 skyTex = vec3(texture(skybox, refraction).rgb);
+    FragColour = vec4(result, 1.0);
 
 }

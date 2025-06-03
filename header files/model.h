@@ -16,11 +16,13 @@ std::vector<Texture> loadedTextures;
 
 class Model {
     public:
-        Model(const string &filepath, bool useTextures) {
-            loadModel(filepath, useTextures);
-        }
+
+        vector<Texture> textures_loaded;	// stores all the textures loaded so far, optimization to make sure textures aren't loaded more than once.
+        vector<Mesh>    meshes;
+        string directory;
+
         Model(const string &filepath) {
-            loadModel(filepath, true);
+            loadModel(filepath);
         }
         void draw(Shader &shader) {
             for (GLuint i = 0; i < meshes.size(); i++) {
@@ -31,8 +33,6 @@ class Model {
 
     private:
 
-        std::string directory;
-        std::vector<Mesh> meshes;
 
         GLuint loadTexture(const char* path, const std::string &directory) {
 
@@ -125,7 +125,7 @@ class Model {
             return material;
         }
 
-        Mesh processMesh(aiMesh *mesh, const aiScene *scene, bool useTextures) {
+        Mesh processMesh(aiMesh *mesh, const aiScene *scene) {
 
             //for the input mesh, it will create a list of vertices, indies and textures for it
             std::vector<Vertex> vertices;
@@ -165,39 +165,40 @@ class Model {
                     indices.push_back(face.mIndices[j]);
                 }
             }
-            if (useTextures) {
-
-                aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
-
-                std::vector<Texture> specularTextures = loadMaterialTex(material, aiTextureType_SPECULAR, "specularTex");
-                textures.insert(textures.end(), specularTextures.begin(), specularTextures.end());
-
-                std::vector<Texture> diffuseTextures = loadMaterialTex(material, aiTextureType_DIFFUSE, "diffuseTex");
-                textures.insert(textures.end(), diffuseTextures.begin(), diffuseTextures.end());
 
 
-            }
+            aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
 
-            aiMaterial *materialc = scene->mMaterials[mesh->mMaterialIndex];
-            Material mat = loadMaterial(materialc);
+            // 1. diffuse maps
+            vector<Texture> diffuseMaps = loadMaterialTex(material, aiTextureType_DIFFUSE, "diffuseTex");
+            textures.insert(textures.end(), diffuseMaps.begin(), diffuseMaps.end());
+            // 2. specular maps
+            vector<Texture> specularMaps = loadMaterialTex(material, aiTextureType_SPECULAR, "specularTex");
+            textures.insert(textures.end(), specularMaps.begin(), specularMaps.end());
+            // 3. normal maps
+            std::vector<Texture> normalMaps = loadMaterialTex(material, aiTextureType_HEIGHT, "normalTex");
+            textures.insert(textures.end(), normalMaps.begin(), normalMaps.end());
+            // 4. height maps
+            std::vector<Texture> heightMaps = loadMaterialTex(material, aiTextureType_AMBIENT, "heightTex");
+            textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
 
-            return Mesh(vertices, indices, textures, mat, useTextures);
+            return Mesh(vertices, indices, textures);
         }
 
         //this function takes in a node and recursively creates a mesh for each of its children, then adds it to the mesh
-        void processNode(aiNode *node, const aiScene *scene, bool useTextures) {
+        void processNode(aiNode *node, const aiScene *scene) {
 
             for (GLuint i = 0; i < node->mNumMeshes; i++) {
                 aiMesh *mesh = scene->mMeshes[node->mMeshes[i]];
-                meshes.push_back(processMesh(mesh, scene, useTextures));
+                meshes.push_back(processMesh(mesh, scene));
             }
             for (GLuint i = 0; i < node->mNumChildren; i++) {
-                processNode(node->mChildren[i], scene, useTextures);
+                processNode(node->mChildren[i], scene);
             }
 
         }
 
-        void loadModel(const std::string &filepath, bool useTextures) {
+        void loadModel(const std::string &filepath) {
             Assimp::Importer importer;
             const aiScene *scene = importer.ReadFile(filepath, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_GenNormals);
 
@@ -209,7 +210,7 @@ class Model {
             //mesh vertex list
             directory = filepath.substr(0, filepath.find_last_of('/'));
 
-            processNode(scene->mRootNode, scene, useTextures);
+            processNode(scene->mRootNode, scene);
 
         }
 };

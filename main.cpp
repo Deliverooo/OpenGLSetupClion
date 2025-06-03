@@ -20,9 +20,11 @@ void uploadPointLightUniforms(Shader &shader, int index, glm::vec3 &lightPos, fl
     float constant, float linear, float quadratic);
 void createSpotLight(Shader &shader, const int index, glm::vec3 &lightPos, glm::vec3 &lightDirection, float ambientStrength, glm::vec3 lightColour,
     float cutOffAngle, float outerCutOffAngle, float constant, float linear, float quadratic);
-
 void uploadDirectionLightUniforms(Shader &shader, const glm::vec3 &direction, float ambientStrength, glm::vec3 lightColour);
+void uploadLightUniforms(Shader &shader, const int index, glm::vec3 &lightPos, glm::vec3 lightColour, float linear, float quadratic);
+
 GLuint loadCubemapTextures(std::vector<std::string> faces);
+
 
 #define log(x) std::cout << x << std::endl
 #define constexpr GLuint WIDTH = 1920;
@@ -40,7 +42,7 @@ float lastX = static_cast<float>(WIDTH) / 2.0f;
 float lastY = static_cast<float>(HEIGHT) / 2.0f;
 bool firstMouse = true;
 
-Vector3f lightPos = glm::vec3(-2.0f, 1.0f, 0.0f);
+Vector3f lightPos = glm::vec3(5.0f, 1.0f, 5.0f);
 Vector3f lightPos2 = glm::vec3(3.0f, 1.0f, 3.0f);
 
 Vector3f modelItemPos = Vector3f(0.0f, 0.0f, 1.0f);
@@ -90,22 +92,13 @@ int main()
         return -1;
     }
 
-    std::string cacheText;
-    ifstream readCacheCamPosFile("orbo.txt");
-    while (getline(readCacheCamPosFile, cacheText)) {
-        cout << cacheText << endl;
-    }
-
-    // cacheCameraPos.x = std::stof(cacheText.substr(0, cacheText.find_first_of(',')).c_str());
-    // cacheCameraPos.y = std::stof(cacheText.substr(cacheText.find_first_of(',') + 1, 14).c_str());
-    // cacheCameraPos.z = std::stof(cacheText.substr(14, 21).c_str());
-
-    // camera.cameraPosition = cacheCameraPos;
     camera.cameraPosition = glm::vec3(0.0f, 0.0f, 0.0f);
 
     // build and compile our shader program
     Shader shader("resources/shaders/vertex.glsl", "resources/shaders/fragment.glsl"); // you can name your shader files however you like
+    Shader shader_001("resources/shaders/vertex_001.glsl", "resources/shaders/fragment_001.glsl");
     Shader screenShader("resources/shaders/postProcessVertex.glsl", "resources/shaders/postProcessFragment.glsl");
+    Shader skyboxShader("resources/shaders/skyboxVertex.glsl", "resources/shaders/skyboxFragment.glsl");
 
     float quadVertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
         // positions   // texCoords
@@ -130,20 +123,20 @@ int main()
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
 
     //makes sure that the shader is currently being used
-    shader.use();
+    shader_001.use();
 
     Model orboModel("resources/models/orbo/Orbo_Obj.obj");
-    // Model floorTiles("resources/models/floor Tiles/tiles.obj");
+    Model floorTiles("resources/models/floor Tiles/tiles.obj");
     Model trebModel("resources/models/treb/Trebushay.obj");
-    Model vecModel("resources/models/vec/Vector_001.obj", false);
+    Model vecModel("resources/models/vec/Vector_001.obj");
     Model pcModel("resources/models/pc/pc.obj");
-    Model ballModel("resources/models/ball/ball.obj", false);
-    Model terrainModel("resources/models/terrain/Terrain.obj", false);
+    Model ballModel("resources/models/ball/bally.obj");
+    Model terrainModel("resources/models/terrain/Terrain.obj");
 
     Transform terrainTransform(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f));
     Entity terrainEntity(terrainTransform, terrainModel);
 
-    Transform ballTransform(glm::vec3(0.0f, 1.5f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f));
+    Transform ballTransform(glm::vec3(0.0f, 1.5f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.25f));
     Entity ballEntity(ballTransform, ballModel);
 
     Transform pcTransform(glm::vec3(3.0f, 0.0f, 3.0f), glm::vec3(0.0f, 4.0f, 0.0f), glm::vec3(0.5f));
@@ -161,10 +154,8 @@ int main()
     Transform orbotransform(glm::vec3(2.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
     Entity orboEntity(orbotransform, orboModel);
 
-    // Transform floortransform(glm::vec3(0.0f, -0.5f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
-    // Entity floorEntity(floortransform, floorTiles);
-
-    log(camera.cameraPosition.x << camera.cameraPosition.y << camera.cameraPosition.z);
+    Transform floortransform(glm::vec3(0.0f, -0.5f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
+    Entity floorEntity(floortransform, floorTiles);
 
     GLuint fbo;
     glGenFramebuffers(1, &fbo);
@@ -193,29 +184,86 @@ int main()
     }
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    // std::vector<std::string> cubeMapTexturePaths = {"resources/models/orbo/cinema.jpg",
-    //                                             "resources/models/orbo/diffuseTex2.png",
-    //                                             "resources/models/orbo/diffuseTex2.png",
-    //                                             "resources/models/floor Tiles/diffuseTex.png",
-    //                                             "resources/models/floor Tiles/plainTex.png",
-    //                                             "resources/models/floor Tiles/specularTex.png"};
+    std::vector<std::string> cubeMapTexturePaths = {
+                                                    "resources/skybox/back.jpg",
+                                                "resources/skybox/left.jpg",
+                                                "resources/skybox/top.jpg",
+                                                "resources/skybox/bottom.jpg",
+                                                "resources/skybox/front.jpg",
+                                                "resources/skybox/back.jpg"
+    };
 
+    float skyboxVertices[] = {
+        // positions
+        -1.0f,  1.0f, -1.0f,
+        -1.0f, -1.0f, -1.0f,
+         1.0f, -1.0f, -1.0f,
+         1.0f, -1.0f, -1.0f,
+         1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f, -1.0f,
+
+        -1.0f, -1.0f,  1.0f,
+        -1.0f, -1.0f, -1.0f,
+        -1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f, -1.0f,
+        -1.0f,  1.0f,  1.0f,
+        -1.0f, -1.0f,  1.0f,
+
+         1.0f, -1.0f, -1.0f,
+         1.0f, -1.0f,  1.0f,
+         1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f, -1.0f,
+         1.0f, -1.0f, -1.0f,
+
+        -1.0f, -1.0f,  1.0f,
+        -1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f,  1.0f,
+         1.0f, -1.0f,  1.0f,
+        -1.0f, -1.0f,  1.0f,
+
+        -1.0f,  1.0f, -1.0f,
+         1.0f,  1.0f, -1.0f,
+         1.0f,  1.0f,  1.0f,
+         1.0f,  1.0f,  1.0f,
+        -1.0f,  1.0f,  1.0f,
+        -1.0f,  1.0f, -1.0f,
+
+        -1.0f, -1.0f, -1.0f,
+        -1.0f, -1.0f,  1.0f,
+         1.0f, -1.0f, -1.0f,
+         1.0f, -1.0f, -1.0f,
+        -1.0f, -1.0f,  1.0f,
+         1.0f, -1.0f,  1.0f
+    };
+    GLuint skyboxVAO, skyboxVBO;
+    glGenVertexArrays(1, &skyboxVAO);
+    glBindVertexArray(skyboxVAO);
+    glGenBuffers(1, &skyboxVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+
+    GLuint cubeMapTexture = loadCubemapTextures(cubeMapTexturePaths);
 
     glEnable(GL_CULL_FACE);
 
-    float ballVelocity = 2.0f;
     enum heldItem {
 
         NONE,
         ORBO,
-        VECTOR
+        VECTOR,
+        BALL
     };
 
-    bool pressed = false;
-
-    std::cout << "started" << std::endl;
     bool in_hand = false;
     heldItem item = NONE;
+
+    glEnable(GL_MULTISAMPLE);
+    glEnable(GL_BLEND);
+
     // render loop
     while (!glfwWindowShouldClose(window))
     {
@@ -223,31 +271,33 @@ int main()
         processInput(window);
 
         camera.update(static_cast<float>(deltaTime));
+        glm::mat4 projection = glm::perspective(glm::radians(camera.zoom), (float) WIDTH / (float) HEIGHT, 0.1f, 100.0f);
+        glm::mat4 skyView = glm::mat4(glm::mat3(camera.getViewMatrix()));
+        glm::mat4 view = camera.getViewMatrix();
 
         glBindFramebuffer(GL_FRAMEBUFFER, fbo);
         glEnable(GL_DEPTH_TEST);
-
         glClearColor(0.0f, 0.11f, 0.21f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        shader.use();
+        glDepthMask(GL_FALSE);
+        skyboxShader.use();
+        skyboxShader.uploadUniformMatrix4f("projection", projection);
+        skyboxShader.uploadUniformMatrix4f("view", skyView);
+        glBindVertexArray(skyboxVAO);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMapTexture);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+        glDepthMask(GL_TRUE);
 
-        glm::mat4 projection = glm::perspective(glm::radians(camera.zoom), (float) WIDTH / (float) HEIGHT, 0.1f, 100.0f);
-        glm::mat4 view = glm::lookAt(camera.cameraPosition, camera.cameraPosition + camera.cameraFront, camera.cameraUp);
-        shader.uploadUniformMatrix4f("projection", projection);
-        shader.uploadUniformMatrix4f("view", view);
-        shader.uploadUniformVector3f("viewPos", camera.cameraFront);
+        shader_001.use();
+        shader_001.uploadUniformMatrix4f("projection", projection);
+        shader_001.uploadUniformMatrix4f("view", view);
+        shader_001.uploadUniformVector3f("viewPos", camera.cameraFront);
 
-        uploadDirectionLightUniforms(shader, glm::vec3(0.0f, -1.0f, 0.2f), 0.3f, glm::vec3(1.0f, 1.0f, 1.0f));
+        uploadLightUniforms(shader_001, 0, lightPos, glm::vec3(0.9f), 0.09f, 0.032f);
+        uploadLightUniforms(shader_001, 1, spotLightPos, glm::vec3(1.0f), 0.09f, 0.032f);
 
-        uploadPointLightUniforms(shader, 0, lightPos, 0.05f, glm::vec3(0.2f), 1.0f, 0.09f, 0.032f);
-
-        createSpotLight(shader, 0, spotLightPos, spotLightDirection, 0.05f, spotLightCol,
-            cos(glm::radians(35.0f)), cos(glm::radians(40.0f)), 1.0f, 0.09f, 0.032f);
-
-        ballEntity.draw(shader);
-
-        orboEntity.draw(shader);
+        orboEntity.draw(shader_001);
         if (orboEntity.transform.scale.z <= 1.5f) {
             orboEntity.transform.scale.z += deltaTime * 0.5f;
         }else if (orboEntity.transform.scale.y <= 1.5f) {
@@ -262,13 +312,9 @@ int main()
             orboEntity.transform.rotation.z += deltaTime * 0.5f;
         }
 
-
-
-        //big orbo
         if (in_hand && glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
             in_hand = false;
             item = NONE;
-            std::cout << "hand" << std::endl;
         }
         if (glm::length(vecEntity.transform.position - camera.cameraPosition) < 2
             && glm::dot(camera.cameraFront, glm::normalize(vecEntity.transform.position - camera.cameraPosition)) > 0.9f
@@ -284,18 +330,23 @@ int main()
             item = ORBO;
         }
 
-        //hey orbo...
+        if (glm::length(ballEntity.transform.position - camera.cameraPosition) < 2
+            && glm::dot(camera.cameraFront, glm::normalize(ballEntity.transform.position - camera.cameraPosition)) > 0.85f
+            && glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
+            in_hand = true;
+            item = BALL;
+        }
 
+        //hey orbo...
         if (item == ORBO) {
             npcOrboEntity.transform.position = camera.cameraPosition + camera.cameraFront - glm::vec3(0.0f, 0.6f, 0.0f);
         } else if (item == VECTOR) {
             vecEntity.transform.position = camera.cameraPosition + camera.cameraFront;
-            npcOrboEntity.transform.rotation.y += glfwGetTime() * 0.001f;
 
+        } else if (item == BALL) {
+            ballEntity.transform.position = camera.cameraPosition + camera.cameraFront;
         } else {
             item = NONE;
-            npcOrboEntity.transform.rotation.y += deltaTime;
-
         }
 
         if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS) {
@@ -303,21 +354,22 @@ int main()
             item = NONE;
         }
 
-        std::cout << in_hand << std::endl;
-
+        if (item != ORBO) {
+            npcOrboEntity.transform.rotation.y += deltaTime;
+        }
 
         if (glfwGetKey(window, GLFW_KEY_E) == GLFW_RELEASE) {
             in_hand = false;
         }
-        // std::cout << "dot: -> " << glm::dot(camera.cameraFront, glm::normalize(vecEntity.transform.position - camera.cameraPosition)) << std::endl;
 
-        vecEntity.draw(shader);
-        // floorEntity.draw(shader);
-        trebEntity.draw(shader);
-        pcEntity.draw(shader);
+        ballEntity.draw(shader_001);
+        vecEntity.draw(shader_001);
+        floorEntity.draw(shader_001);
+        trebEntity.draw(shader_001);
+        pcEntity.draw(shader_001);
 
-        npcOrboEntity.draw(shader);
-        terrainEntity.draw(shader);
+        npcOrboEntity.draw(shader_001);
+        terrainEntity.draw(shader_001);
 
         // now bind back to default framebuffer and draw a quad plane with the attached framebuffer colour texture
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -436,6 +488,14 @@ void uploadPointLightUniforms(Shader &shader, const int index, Vector3f &lightPo
     shader.setFloat("pointLights[" + std::to_string(index) + "].attenuation.linear", linear);
     shader.setFloat("pointLights[" + std::to_string(index) + "].attenuation.quadratic", quadratic);
 }
+void uploadLightUniforms(Shader &shader, const int index, glm::vec3 &lightPos, glm::vec3 lightColour, float linear, float quadratic) {
+
+    shader.uploadUniformVector3f("lights[" + std::to_string(index) + "].position", lightPos);
+    shader.uploadUniformVector3f("lights[" + std::to_string(index) + "].colour", lightColour);
+    shader.setFloat("lights[" + std::to_string(index) + "].linear", linear);
+    shader.setFloat("lights[" + std::to_string(index) + "].quadratic", quadratic);
+}
+
 void uploadDirectionLightUniforms(Shader &shader, const glm::vec3 &direction, float ambientStrength, glm::vec3 lightColour) {
 
     shader.uploadUniformVector3f("directionLight.direction", direction);

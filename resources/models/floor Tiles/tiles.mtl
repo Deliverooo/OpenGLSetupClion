@@ -2,14 +2,14 @@
 # www.blender.org
 
 newmtl Material
-Ns 2.0
+Ns 0.5
 Ka 1.000000 1.000000 1.000000
 Kd 1.0 1.0 1.0
-Ks 1.0 1.0 1.0
+Ks 0.8352941 0.078431375 0.9529412
 Ke 0.000000 0.000000 0.000000
 Ni 1.000000
 d 1.000000
 illum 2
 
-map_Kd diffuseTex.png
 map_Ks Loooooowwww.png
+map_Kd diffuseTex.png
