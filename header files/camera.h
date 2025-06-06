@@ -14,6 +14,13 @@ enum Camera_Movement {
     JUMP,
 };
 
+enum View_Mode {
+    WALK,
+    FLY,
+    ORBIT,
+};
+
+
 const GLfloat YAW = 90.0f;
 const GLfloat PITCH = 0.0f;
 const GLfloat SPEED = 5.0f;
@@ -59,6 +66,7 @@ class Camera {
         glm::mat4 getViewMatrix() {
             return glm::lookAt(cameraPosition, cameraPosition + cameraFront, cameraUp);
         }
+
 
         void processKeyboard(Camera_Movement direction, float deltaTime) {
 

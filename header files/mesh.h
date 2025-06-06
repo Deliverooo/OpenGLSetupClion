@@ -68,10 +68,8 @@ class Mesh {
                 }
                 glUniform1i(glGetUniformLocation(shader.ID, (name + num).c_str()), i);
 
-                shader.setFloat("shininess", 4);
                 glBindTexture(GL_TEXTURE_2D, textures[i].id);
             }
-
 
             glBindVertexArray(VAO);
             glDrawElements(GL_TRIANGLES, static_cast<unsigned int>(indices.size()), GL_UNSIGNED_INT, 0);

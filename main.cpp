@@ -134,28 +134,24 @@ int main()
     Model terrainModel("resources/models/terrain/Terrain.obj");
 
     Transform terrainTransform(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f));
-    Entity terrainEntity(terrainTransform, terrainModel);
 
     Transform ballTransform(glm::vec3(0.0f, 1.5f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.25f));
-    Entity ballEntity(ballTransform, ballModel);
 
     Transform pcTransform(glm::vec3(3.0f, 0.0f, 3.0f), glm::vec3(0.0f, 4.0f, 0.0f), glm::vec3(0.5f));
-    Entity pcEntity(pcTransform, pcModel);
 
     Transform npcOrboTransform(glm::vec3(2.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.75f));
-    Entity npcOrboEntity(npcOrboTransform, orboModel);
 
     Transform vecTransform(glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
-    Entity vecEntity(vecTransform, vecModel);
+
 
     Transform trebTransform(glm::vec3(-2.0f, 1.75f, 9.5f), glm::vec3(0.0f, 0.01f, 0.0f), glm::vec3(0.1f));
-    Entity trebEntity(trebTransform, trebModel);
+
 
     Transform orbotransform(glm::vec3(2.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
-    Entity orboEntity(orbotransform, orboModel);
+
 
     Transform floortransform(glm::vec3(0.0f, -0.5f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
-    Entity floorEntity(floortransform, floorTiles);
+
 
     GLuint fbo;
     glGenFramebuffers(1, &fbo);
@@ -251,7 +247,6 @@ int main()
     glEnable(GL_CULL_FACE);
 
     enum heldItem {
-
         NONE,
         ORBO,
         VECTOR,
@@ -294,44 +289,29 @@ int main()
         shader_001.uploadUniformMatrix4f("view", view);
         shader_001.uploadUniformVector3f("viewPos", camera.cameraFront);
 
-        uploadLightUniforms(shader_001, 0, lightPos, glm::vec3(0.9f), 0.09f, 0.032f);
-        uploadLightUniforms(shader_001, 1, spotLightPos, glm::vec3(1.0f), 0.09f, 0.032f);
-
-        orboEntity.draw(shader_001);
-        if (orboEntity.transform.scale.z <= 1.5f) {
-            orboEntity.transform.scale.z += deltaTime * 0.5f;
-        }else if (orboEntity.transform.scale.y <= 1.5f) {
-            orboEntity.transform.scale.y += deltaTime * 0.5f;
-        }else if (orboEntity.transform.scale.x <= 1.5f) {
-            orboEntity.transform.scale.x += deltaTime * 0.5f;
-        }else if (orboEntity.transform.position.x <= 5.5f) {
-            orboEntity.transform.position.x += deltaTime * 0.5f;
-        } else {
-            orboEntity.transform.rotation.x += deltaTime * 0.5f;
-            orboEntity.transform.rotation.y += deltaTime * 0.5f;
-            orboEntity.transform.rotation.z += deltaTime * 0.5f;
-        }
+        uploadLightUniforms(shader_001, 0, lightPos, glm::vec3(0.7f), 0.09f, 0.032f);
+        uploadLightUniforms(shader_001, 1, spotLightPos, glm::vec3(0.7f), 0.09f, 0.032f);
 
         if (in_hand && glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
             in_hand = false;
             item = NONE;
         }
-        if (glm::length(vecEntity.transform.position - camera.cameraPosition) < 2
-            && glm::dot(camera.cameraFront, glm::normalize(vecEntity.transform.position - camera.cameraPosition)) > 0.9f
+        if (glm::length(vecTransform.position - camera.cameraPosition) < 2
+            && glm::dot(camera.cameraFront, glm::normalize(vecTransform.position - camera.cameraPosition)) > 0.9f
             && glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
             in_hand = true;
             item = VECTOR;
         }
 
-        if (glm::length(npcOrboEntity.transform.position - camera.cameraPosition) < 2
-            && glm::dot(camera.cameraFront, glm::normalize(npcOrboEntity.transform.position - camera.cameraPosition)) > 0.85f
+        if (glm::length(npcOrboTransform.position - camera.cameraPosition) < 2
+            && glm::dot(camera.cameraFront, glm::normalize(npcOrboTransform.position - camera.cameraPosition)) > 0.85f
             && glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
             in_hand = true;
             item = ORBO;
         }
 
-        if (glm::length(ballEntity.transform.position - camera.cameraPosition) < 2
-            && glm::dot(camera.cameraFront, glm::normalize(ballEntity.transform.position - camera.cameraPosition)) > 0.85f
+        if (glm::length(ballTransform.position - camera.cameraPosition) < 2
+            && glm::dot(camera.cameraFront, glm::normalize(ballTransform.position - camera.cameraPosition)) > 0.85f
             && glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
             in_hand = true;
             item = BALL;
@@ -339,12 +319,12 @@ int main()
 
         //hey orbo...
         if (item == ORBO) {
-            npcOrboEntity.transform.position = camera.cameraPosition + camera.cameraFront - glm::vec3(0.0f, 0.6f, 0.0f);
+            npcOrboTransform.position = camera.cameraPosition + camera.cameraFront - glm::vec3(0.0f, 0.6f, 0.0f);
         } else if (item == VECTOR) {
-            vecEntity.transform.position = camera.cameraPosition + camera.cameraFront;
+            vecTransform.position = camera.cameraPosition + camera.cameraFront;
 
         } else if (item == BALL) {
-            ballEntity.transform.position = camera.cameraPosition + camera.cameraFront;
+            ballTransform.position = camera.cameraPosition + camera.cameraFront;
         } else {
             item = NONE;
         }
@@ -355,21 +335,81 @@ int main()
         }
 
         if (item != ORBO) {
-            npcOrboEntity.transform.rotation.y += deltaTime;
+            npcOrboTransform.rotation.y += deltaTime;
         }
 
         if (glfwGetKey(window, GLFW_KEY_E) == GLFW_RELEASE) {
             in_hand = false;
         }
 
-        ballEntity.draw(shader_001);
-        vecEntity.draw(shader_001);
-        floorEntity.draw(shader_001);
-        trebEntity.draw(shader_001);
-        pcEntity.draw(shader_001);
+        if (orbotransform.scale.z <= 1.5f) {
+            orbotransform.scale.z += deltaTime * 0.5f;
+        }else if (orbotransform.scale.y <= 1.5f) {
+            orbotransform.scale.y += deltaTime * 0.5f;
+        }else if (orbotransform.scale.x <= 1.5f) {
+            orbotransform.scale.x += deltaTime * 0.5f;
+        }else if (orbotransform.position.x <= 5.5f) {
+            orbotransform.position.x += deltaTime * 0.5f;
+        } else {
+            orbotransform.rotation.x += deltaTime * 0.5f;
+            orbotransform.rotation.y += deltaTime * 0.5f;
+            orbotransform.rotation.z += deltaTime * 0.5f;
+        }
 
-        npcOrboEntity.draw(shader_001);
-        terrainEntity.draw(shader_001);
+        glm::mat4 orboModelMat = glm::mat4(1.0f);
+        orboModelMat = glm::translate(orboModelMat, orbotransform.position);
+        orboModelMat = glm::rotate(orboModelMat, 1.0f, orbotransform.rotation);
+        shader_001.setFloat("shininess", 32);
+        shader_001.uploadUniformMatrix4f("model", orboModelMat);
+        orboModel.draw(shader_001);
+
+        glm::mat4 ballModelMat = glm::mat4(1.0f);
+        ballModelMat = glm::translate(ballModelMat, ballTransform.position);
+        ballModelMat = glm::rotate(ballModelMat, 1.0f, ballTransform.rotation);
+        ballModelMat = glm::scale(ballModelMat, ballTransform.scale);
+        shader_001.setFloat("shininess", 16);
+        shader_001.uploadUniformMatrix4f("model", ballModelMat);
+        ballModel.draw(shader_001);
+
+        glm::mat4 vecModelMat = glm::mat4(1.0f);
+        vecModelMat = glm::translate(vecModelMat, vecTransform.position);
+        vecModelMat = glm::rotate(vecModelMat, 1.0f, vecTransform.rotation);
+        shader_001.setFloat("shininess", 4);
+        shader_001.uploadUniformMatrix4f("model", vecModelMat);
+        vecModel.draw(shader_001);
+
+        glm::mat4 floorModelMat = glm::mat4(1.0f);
+        floorModelMat = glm::translate(floorModelMat, floortransform.position);
+        shader_001.setFloat("shininess", 4);
+        shader_001.uploadUniformMatrix4f("model", floorModelMat);
+        floorTiles.draw(shader_001);
+
+        glm::mat4 trebModelMat = glm::mat4(1.0f);
+        trebModelMat = glm::translate(trebModelMat, trebTransform.position);
+        trebModelMat = glm::rotate(trebModelMat, 1.0f, trebTransform.rotation);
+        trebModelMat = glm::scale(trebModelMat, trebTransform.scale);
+        shader_001.setFloat("shininess", 8);
+        shader_001.uploadUniformMatrix4f("model", trebModelMat);
+        trebModel.draw(shader_001);
+
+        glm::mat4 pcModelMat = glm::mat4(1.0f);
+        pcModelMat = glm::translate(pcModelMat, pcTransform.position);
+        shader_001.setFloat("shininess", 4);
+        shader_001.uploadUniformMatrix4f("model", pcModelMat);
+        pcModel.draw(shader_001);
+
+        glm::mat4 npcOrboModelMat = glm::mat4(1.0f);
+        npcOrboModelMat = glm::translate(npcOrboModelMat, npcOrboTransform.position);
+        npcOrboModelMat = glm::rotate(npcOrboModelMat, 1.0f, npcOrboTransform.rotation);
+        shader_001.setFloat("shininess", 64);
+        shader_001.uploadUniformMatrix4f("model", npcOrboModelMat);
+        orboModel.draw(shader_001);
+
+        glm::mat4 terrainModelMat = glm::mat4(1.0f);
+        terrainModelMat = glm::translate(terrainModelMat, terrainTransform.position);
+        shader_001.setFloat("shininess", 4);
+        shader_001.uploadUniformMatrix4f("model", terrainModelMat);
+        terrainModel.draw(shader_001);
 
         // now bind back to default framebuffer and draw a quad plane with the attached framebuffer colour texture
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -380,8 +420,8 @@ int main()
 
         screenShader.use();
         screenShader.setFloat("time", (float)glfwGetTime());
-        screenShader.setFloat("distance", glm::distance(npcOrboEntity.transform.position, camera.cameraPosition));
-        log(1/glm::distance(npcOrboEntity.transform.position, camera.cameraPosition));
+        screenShader.setFloat("distance", glm::distance(npcOrboTransform.position, camera.cameraPosition));
+        log(1/glm::distance(npcOrboTransform.position, camera.cameraPosition));
         glBindVertexArray(quadVAO);
         glBindTexture(GL_TEXTURE_2D, texture);	// use the colour attachment texture as the texture of the quad plane
         glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -404,6 +444,8 @@ int main()
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 void processInput(GLFWwindow *window)
 {
+
+
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);
     }
@@ -426,6 +468,9 @@ void processInput(GLFWwindow *window)
         std::cout << "printing" << std::endl;
     }
 }
+
+
+
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {

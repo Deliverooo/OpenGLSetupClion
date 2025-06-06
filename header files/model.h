@@ -10,8 +10,8 @@
 #include "stb_image.h"
 
 struct aiMaterial;
-using namespace std;
 
+using namespace std;
 std::vector<Texture> loadedTextures;
 
 class Model {
@@ -25,14 +25,13 @@ class Model {
             loadModel(filepath);
         }
         void draw(Shader &shader) {
+
             for (GLuint i = 0; i < meshes.size(); i++) {
                 meshes[i].draw(shader);
             }
         }
 
-
     private:
-
 
         GLuint loadTexture(const char* path, const std::string &directory) {
 
@@ -75,7 +74,7 @@ class Model {
 
             return textureID;
         }
-        std::vector<Texture> loadMaterialTex(aiMaterial *material, aiTextureType type, std::string typeName) {
+        std::vector<Texture> loadMaterialTex(aiMaterial *material, aiTextureType type, const std::string& typeName) {
 
             std::vector<Texture> textures;
             for (GLuint i = 0; i < material->GetTextureCount(type); i++) {
@@ -98,9 +97,7 @@ class Model {
                     texture.path = str;
                     textures.push_back(texture);
                     loadedTextures.push_back(texture);
-
                 }
-
             }
             return textures;
         }
@@ -165,7 +162,6 @@ class Model {
                     indices.push_back(face.mIndices[j]);
                 }
             }
-
 
             aiMaterial *material = scene->mMaterials[mesh->mMaterialIndex];
 

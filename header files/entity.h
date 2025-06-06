@@ -9,12 +9,15 @@ class Entity {
     public:
         Transform transform;
         Model model;
+        Material material;
 
-
-        Entity(Transform &transform, Model model): transform(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f), glm::vec3(1.0f)), model("") {
+        Entity(Transform &transform, Model &model, Material material): transform(glm::vec3(0.0f, 0.0f, 0.0f),
+                                                                           glm::vec3(0.0f), glm::vec3(1.0f)), model("") {
             this->transform = transform;
             this->model = model;
+            this->material = material;
         }
+
         void draw(Shader &shader) {
 
             shader.use();
@@ -25,10 +28,9 @@ class Entity {
             model = glm::rotate(model, this->transform.rotation.z, this->transform.rotation);
 
             model = glm::scale(model, this->transform.scale);
+
             shader.uploadUniformMatrix4f("model", model);
             this->model.draw(shader);
         }
-
-
 };
 #endif //ENTITY_H

@@ -41,6 +41,11 @@ void main()
 
     vec3 result = vec3(0.0f);
 
+    vec3 ambient = vec3(texture(diffuseTex1, TexCoords)) * 0.2f;
+
+    vec3 refraction = reflect(viewDirection, unitNormal);
+    vec3 skyTex = vec3(texture(skybox, refraction).rgb);
+
     for(int i = 0; i < NR_LIGHTS; i++){
 
         vec3 unitLightDirection = normalize(lights[i].position - VertexPosWorld);
@@ -50,11 +55,11 @@ void main()
         float atten = 1.0f / (1 + (lights[i].linear * distance) + (lights[i].quadratic * pow(distance, 2)));
 
         float diff = max(dot(unitNormal, unitLightDirection), 0.0f);
-        float spec = pow(max(dot(viewDirection, specularReflectDirection), 0.0f), 4);
+        float spec = pow(max(dot(viewDirection, specularReflectDirection), 0.0f), shininess);
 
         vec3 diffuse  = lights[i].colour * diff * (vec3(texture(diffuseTex1, TexCoords)));
         vec3 specular = spec * vec3(texture(specularTex1, TexCoords)) * 0.3f;
-        vec3 ambient = vec3(texture(diffuseTex1, TexCoords)) * 0.2f;
+
 
         diffuse *= atten;
         specular *= atten;
@@ -62,8 +67,7 @@ void main()
         result += (diffuse + specular + ambient);
     }
 
-    vec3 refraction = reflect(viewDirection, unitNormal);
-    vec3 skyTex = vec3(texture(skybox, refraction).rgb);
+
 
     FragColour = vec4(result, 1.0f);
 }
