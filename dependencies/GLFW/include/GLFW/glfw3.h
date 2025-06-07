@@ -1,7 +1,7 @@
 /*************************************************************************
  * GLFW 3.3 - www.glfw.org
  * A library for OpenGL, window and input
- *------------------------------------------------------------------------
+ *----------------------------------------------------- -------------------
  * Copyright (c) 2002-2006 Marcus Geelnard
  * Copyright (c) 2006-2016 Camilla Löwy <elmindreda@glfw.org>
  *
@@ -563,6 +563,7 @@ extern "C" {
 #define GLFW_JOYSTICK_15            14
 #define GLFW_JOYSTICK_16            15
 #define GLFW_JOYSTICK_LAST          GLFW_JOYSTICK_16
+
 /*! @} */
 
 /*! @defgroup errors Error codes

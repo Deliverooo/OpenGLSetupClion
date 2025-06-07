@@ -10,6 +10,10 @@
 #include "header files/camera.h"
 #include "header files/entity.h"
 #include "header files/model.h"
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
+
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
@@ -68,7 +72,7 @@ int main()
     glfwWindowHint(GLFW_SAMPLES, 4);
 
     // glfw window creation
-    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "All hail Orbo", glfwGetPrimaryMonitor(), nullptr);
+    GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "All hail Orbo", nullptr, nullptr);
     if (window == nullptr)
     {
         std::cerr << "Failed to create GLFW window" << std::endl;
@@ -91,6 +95,15 @@ int main()
         std::cerr << "Failed to initialize GLAD" << std::endl;
         return -1;
     }
+
+    // Setup Dear ImGui context
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    ImGui::StyleColorsDark();
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init("#version 330");
+
 
     camera.cameraPosition = glm::vec3(0.0f, 0.0f, 0.0f);
 
@@ -139,16 +152,13 @@ int main()
 
     Transform pcTransform(glm::vec3(3.0f, 0.0f, 3.0f), glm::vec3(0.0f, 4.0f, 0.0f), glm::vec3(0.5f));
 
-    Transform npcOrboTransform(glm::vec3(2.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.75f));
+    Transform npcOrboTransform(glm::vec3(2.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.75f));
 
     Transform vecTransform(glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
 
-
     Transform trebTransform(glm::vec3(-2.0f, 1.75f, 9.5f), glm::vec3(0.0f, 0.01f, 0.0f), glm::vec3(0.1f));
 
-
     Transform orbotransform(glm::vec3(2.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
-
 
     Transform floortransform(glm::vec3(0.0f, -0.5f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
 
@@ -358,6 +368,7 @@ int main()
 
         glm::mat4 orboModelMat = glm::mat4(1.0f);
         orboModelMat = glm::translate(orboModelMat, orbotransform.position);
+        orboModelMat = glm::scale(orboModelMat, orbotransform.scale);
         orboModelMat = glm::rotate(orboModelMat, 1.0f, orbotransform.rotation);
         shader_001.setFloat("shininess", 32);
         shader_001.uploadUniformMatrix4f("model", orboModelMat);
@@ -365,14 +376,15 @@ int main()
 
         glm::mat4 ballModelMat = glm::mat4(1.0f);
         ballModelMat = glm::translate(ballModelMat, ballTransform.position);
-        ballModelMat = glm::rotate(ballModelMat, 1.0f, ballTransform.rotation);
         ballModelMat = glm::scale(ballModelMat, ballTransform.scale);
+        ballModelMat = glm::rotate(ballModelMat, 1.0f, ballTransform.rotation);
         shader_001.setFloat("shininess", 16);
         shader_001.uploadUniformMatrix4f("model", ballModelMat);
         ballModel.draw(shader_001);
 
         glm::mat4 vecModelMat = glm::mat4(1.0f);
         vecModelMat = glm::translate(vecModelMat, vecTransform.position);
+        vecModelMat = glm::scale(vecModelMat, vecTransform.scale);
         vecModelMat = glm::rotate(vecModelMat, 1.0f, vecTransform.rotation);
         shader_001.setFloat("shininess", 4);
         shader_001.uploadUniformMatrix4f("model", vecModelMat);
@@ -380,33 +392,43 @@ int main()
 
         glm::mat4 floorModelMat = glm::mat4(1.0f);
         floorModelMat = glm::translate(floorModelMat, floortransform.position);
+        floorModelMat = glm::scale(floorModelMat, floortransform.scale);
+        floorModelMat = glm::rotate(floorModelMat, 1.0f, floortransform.rotation);
         shader_001.setFloat("shininess", 4);
         shader_001.uploadUniformMatrix4f("model", floorModelMat);
         floorTiles.draw(shader_001);
 
         glm::mat4 trebModelMat = glm::mat4(1.0f);
         trebModelMat = glm::translate(trebModelMat, trebTransform.position);
-        trebModelMat = glm::rotate(trebModelMat, 1.0f, trebTransform.rotation);
         trebModelMat = glm::scale(trebModelMat, trebTransform.scale);
+        trebModelMat = glm::rotate(trebModelMat, 1.0f, trebTransform.rotation);
         shader_001.setFloat("shininess", 8);
         shader_001.uploadUniformMatrix4f("model", trebModelMat);
         trebModel.draw(shader_001);
 
         glm::mat4 pcModelMat = glm::mat4(1.0f);
         pcModelMat = glm::translate(pcModelMat, pcTransform.position);
+        pcModelMat = glm::scale(pcModelMat, pcTransform.scale);
+        pcModelMat = glm::rotate(pcModelMat, 1.0f, pcTransform.rotation);
         shader_001.setFloat("shininess", 4);
         shader_001.uploadUniformMatrix4f("model", pcModelMat);
         pcModel.draw(shader_001);
 
         glm::mat4 npcOrboModelMat = glm::mat4(1.0f);
         npcOrboModelMat = glm::translate(npcOrboModelMat, npcOrboTransform.position);
-        npcOrboModelMat = glm::rotate(npcOrboModelMat, 1.0f, npcOrboTransform.rotation);
+        npcOrboModelMat = glm::scale(npcOrboModelMat, npcOrboTransform.scale);
+        npcOrboModelMat = glm::rotate(npcOrboModelMat, npcOrboTransform.rotation.x, npcOrboTransform.rotation);
+        npcOrboModelMat = glm::rotate(npcOrboModelMat, npcOrboTransform.rotation.y, npcOrboTransform.rotation);
+        npcOrboModelMat = glm::rotate(npcOrboModelMat, npcOrboTransform.rotation.z, npcOrboTransform.rotation);
+
         shader_001.setFloat("shininess", 64);
         shader_001.uploadUniformMatrix4f("model", npcOrboModelMat);
         orboModel.draw(shader_001);
 
         glm::mat4 terrainModelMat = glm::mat4(1.0f);
         terrainModelMat = glm::translate(terrainModelMat, terrainTransform.position);
+        terrainModelMat = glm::scale(terrainModelMat, terrainTransform.scale);
+        terrainModelMat = glm::rotate(terrainModelMat, 1.0f, terrainTransform.rotation);
         shader_001.setFloat("shininess", 4);
         shader_001.uploadUniformMatrix4f("model", terrainModelMat);
         terrainModel.draw(shader_001);
@@ -444,8 +466,11 @@ int main()
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 void processInput(GLFWwindow *window)
 {
-
-
+    if (glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS) {
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    } else {
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    }
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);
     }
@@ -468,8 +493,6 @@ void processInput(GLFWwindow *window)
         std::cout << "printing" << std::endl;
     }
 }
-
-
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
