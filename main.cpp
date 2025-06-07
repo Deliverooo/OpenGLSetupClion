@@ -17,6 +17,7 @@
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void OrbitLight(glm::mat4 &light, glm::vec3 &lightPos, const glm::vec3 &pivotPos, float radius, const int offsetMultiplier);
@@ -45,6 +46,8 @@ float lastScroll = 0;
 float lastX = static_cast<float>(WIDTH) / 2.0f;
 float lastY = static_cast<float>(HEIGHT) / 2.0f;
 bool firstMouse = true;
+
+bool ui_mode = false;
 
 Vector3f lightPos = glm::vec3(5.0f, 1.0f, 5.0f);
 Vector3f lightPos2 = glm::vec3(3.0f, 1.0f, 3.0f);
@@ -80,6 +83,7 @@ int main()
         return -1;
     }
     glfwMakeContextCurrent(window);
+    glfwSetKeyCallback(window, key_callback);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback);
@@ -147,19 +151,12 @@ int main()
     Model terrainModel("resources/models/terrain/Terrain.obj");
 
     Transform terrainTransform(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f));
-
     Transform ballTransform(glm::vec3(0.0f, 1.5f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.25f));
-
     Transform pcTransform(glm::vec3(3.0f, 0.0f, 3.0f), glm::vec3(0.0f, 4.0f, 0.0f), glm::vec3(0.5f));
-
     Transform npcOrboTransform(glm::vec3(2.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.75f));
-
     Transform vecTransform(glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
-
     Transform trebTransform(glm::vec3(-2.0f, 1.75f, 9.5f), glm::vec3(0.0f, 0.01f, 0.0f), glm::vec3(0.1f));
-
     Transform orbotransform(glm::vec3(2.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
-
     Transform floortransform(glm::vec3(0.0f, -0.5f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
 
 
@@ -285,6 +282,10 @@ int main()
         glClearColor(0.0f, 0.11f, 0.21f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
         glDepthMask(GL_FALSE);
         skyboxShader.use();
         skyboxShader.uploadUniformMatrix4f("projection", projection);
@@ -352,24 +353,13 @@ int main()
             in_hand = false;
         }
 
-        if (orbotransform.scale.z <= 1.5f) {
-            orbotransform.scale.z += deltaTime * 0.5f;
-        }else if (orbotransform.scale.y <= 1.5f) {
-            orbotransform.scale.y += deltaTime * 0.5f;
-        }else if (orbotransform.scale.x <= 1.5f) {
-            orbotransform.scale.x += deltaTime * 0.5f;
-        }else if (orbotransform.position.x <= 5.5f) {
-            orbotransform.position.x += deltaTime * 0.5f;
-        } else {
-            orbotransform.rotation.x += deltaTime * 0.5f;
-            orbotransform.rotation.y += deltaTime * 0.5f;
-            orbotransform.rotation.z += deltaTime * 0.5f;
-        }
-
         glm::mat4 orboModelMat = glm::mat4(1.0f);
         orboModelMat = glm::translate(orboModelMat, orbotransform.position);
         orboModelMat = glm::scale(orboModelMat, orbotransform.scale);
         orboModelMat = glm::rotate(orboModelMat, 1.0f, orbotransform.rotation);
+        orboModelMat = glm::rotate(orboModelMat, orbotransform.rotation.x, orbotransform.rotation);
+        orboModelMat = glm::rotate(orboModelMat, orbotransform.rotation.y, orbotransform.rotation);
+        orboModelMat = glm::rotate(orboModelMat, orbotransform.rotation.z, orbotransform.rotation);
         shader_001.setFloat("shininess", 32);
         shader_001.uploadUniformMatrix4f("model", orboModelMat);
         orboModel.draw(shader_001);
@@ -394,7 +384,7 @@ int main()
         floorModelMat = glm::translate(floorModelMat, floortransform.position);
         floorModelMat = glm::scale(floorModelMat, floortransform.scale);
         floorModelMat = glm::rotate(floorModelMat, 1.0f, floortransform.rotation);
-        shader_001.setFloat("shininess", 4);
+        shader_001.setFloat("shininess", 64);
         shader_001.uploadUniformMatrix4f("model", floorModelMat);
         floorTiles.draw(shader_001);
 
@@ -402,7 +392,7 @@ int main()
         trebModelMat = glm::translate(trebModelMat, trebTransform.position);
         trebModelMat = glm::scale(trebModelMat, trebTransform.scale);
         trebModelMat = glm::rotate(trebModelMat, 1.0f, trebTransform.rotation);
-        shader_001.setFloat("shininess", 8);
+        shader_001.setFloat("shininess", 4);
         shader_001.uploadUniformMatrix4f("model", trebModelMat);
         trebModel.draw(shader_001);
 
@@ -410,7 +400,7 @@ int main()
         pcModelMat = glm::translate(pcModelMat, pcTransform.position);
         pcModelMat = glm::scale(pcModelMat, pcTransform.scale);
         pcModelMat = glm::rotate(pcModelMat, 1.0f, pcTransform.rotation);
-        shader_001.setFloat("shininess", 4);
+        shader_001.setFloat("shininess", 32);
         shader_001.uploadUniformMatrix4f("model", pcModelMat);
         pcModel.draw(shader_001);
 
@@ -420,7 +410,6 @@ int main()
         npcOrboModelMat = glm::rotate(npcOrboModelMat, npcOrboTransform.rotation.x, npcOrboTransform.rotation);
         npcOrboModelMat = glm::rotate(npcOrboModelMat, npcOrboTransform.rotation.y, npcOrboTransform.rotation);
         npcOrboModelMat = glm::rotate(npcOrboModelMat, npcOrboTransform.rotation.z, npcOrboTransform.rotation);
-
         shader_001.setFloat("shininess", 64);
         shader_001.uploadUniformMatrix4f("model", npcOrboModelMat);
         orboModel.draw(shader_001);
@@ -448,12 +437,26 @@ int main()
         glBindTexture(GL_TEXTURE_2D, texture);	// use the colour attachment texture as the texture of the quad plane
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
+        ImGui::Begin("Hello ImGui!");
+        ImGui::Text("This is text!");
+        ImGui::SliderFloat("Trebushay scale X", &trebTransform.scale.x, 0.0f, 1.0f);
+        ImGui::SliderFloat("Trebushay scale Y", &trebTransform.scale.y, 0.0f, 1.0f);
+        ImGui::SliderFloat("Trebushay scale Z", &trebTransform.scale.z, 0.0f, 1.0f);
+        ImGui::End();
+
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
         glfwSwapBuffers(window);
         glfwPollEvents();
 
         lastFrame = glfwGetTime();
         deltaTime = lastFrame - currentFrame;
     }
+
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
 
     ofstream cachePosFile("orbo.txt");
     cachePosFile << std::to_string(camera.cameraPosition.x) + " , " << std::to_string(camera.cameraPosition.y) + " , " << std::to_string(camera.cameraPosition.z);
@@ -466,34 +469,47 @@ int main()
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 void processInput(GLFWwindow *window)
 {
-    if (glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS) {
-        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-    } else {
+    if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS && ui_mode == false) {
+        ui_mode = true;
+    } else if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS && ui_mode == true) {
+        ui_mode = false;
+    }
+    if (!ui_mode) {
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+            camera.processKeyboard(FORWARD, deltaTime);
+        }
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+            camera.processKeyboard(BACKWARD, deltaTime);
+        }
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+            camera.processKeyboard(RIGHT, deltaTime);
+        }
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+            camera.processKeyboard(LEFT, deltaTime);
+        }
+        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+            camera.processKeyboard(JUMP, deltaTime);
+        }
+    } else {
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        log("in ui mode");
     }
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);
     }
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-        camera.processKeyboard(FORWARD, deltaTime);
-    }
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-        camera.processKeyboard(BACKWARD, deltaTime);
-    }
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-        camera.processKeyboard(RIGHT, deltaTime);
-    }
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-        camera.processKeyboard(LEFT, deltaTime);
-    }
-    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-        camera.processKeyboard(JUMP, deltaTime);
-    }
+
     if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) {
         std::cout << "printing" << std::endl;
     }
 }
 
+void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+
+    log("key_callback");
+
+}
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
@@ -514,7 +530,9 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
     lastX = xpos;
     lastY = ypos;
 
-    camera.processMouseMovement(mouseDx, mouseDy);
+    if (!ui_mode) {
+        camera.processMouseMovement(mouseDx, mouseDy);
+    }
 }
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
