@@ -20,16 +20,16 @@ enum View_Mode {
     ORBIT,
 };
 
-
-const GLfloat YAW = 90.0f;
-const GLfloat PITCH = 0.0f;
-const GLfloat SPEED = 5.0f;
-const GLfloat JUMP_SPEED = 1.0f;
-const GLfloat SENSITIVITY = 0.08f;
-const GLfloat ZOOM = 70.0f;
-const GLfloat GRAVITY = -20.0f;
-const GLfloat JUMP_HEIGHT = 7.0f;
-const GLboolean IN_AIR = GL_FALSE;
+// default camera attributes
+constexpr GLfloat YAW = 90.0f;
+constexpr GLfloat PITCH = 0.0f;
+constexpr GLfloat SPEED = 5.0f;
+constexpr GLfloat JUMP_SPEED = 1.0f;
+constexpr GLfloat SENSITIVITY = 0.08f;
+constexpr GLfloat ZOOM = 70.0f;
+constexpr GLfloat GRAVITY = -20.0f;
+constexpr GLfloat JUMP_HEIGHT = 7.0f;
+constexpr bool IN_AIR = false;
 
 class Camera {
     public:
@@ -63,14 +63,14 @@ class Camera {
             updateCameraVectors();
         }
 
-        glm::mat4 getViewMatrix() {
+        // no discard basically means "If you want my return value, you better use it!"
+        [[nodiscard]] glm::mat4 getViewMatrix() const {
             return glm::lookAt(cameraPosition, cameraPosition + cameraFront, cameraUp);
         }
 
+        void processKeyboard(const Camera_Movement direction, const double deltaTime) {
 
-        void processKeyboard(Camera_Movement direction, float deltaTime) {
-
-            float velocity = this->movementSpeed * deltaTime;
+            const float velocity = this->movementSpeed * static_cast<float>(deltaTime);
 
             if (direction == FORWARD) {
                 cameraPosition += glm::normalize(glm::vec3(cameraFront.x, 0.0f, cameraFront.z)) * velocity;
@@ -85,41 +85,40 @@ class Camera {
                 cameraPosition += glm::normalize(cameraRight) * velocity;
             }
             if (direction == JUMP) {
-                jump(deltaTime);
+                jump();
             }
         }
 
-        void jump(float deltaTime) {
+        void jump() {
             if (!inAir) {
                 jumpVelocity = JUMP_SPEED * JUMP_HEIGHT;
                 inAir = GL_TRUE;
             }
         }
 
-        void applyGravity(float deltaTime) {
+        void applyGravity(const float deltaTime) {
 
             jumpVelocity += GRAVITY * deltaTime;
-            cameraPosition += glm::vec3(0, jumpVelocity * deltaTime, 0);
+            cameraPosition += glm::vec3(0.0f, jumpVelocity * deltaTime, 0.0f);
 
             if (cameraPosition.y <= 1) {
-                jumpVelocity = 0;
-                cameraPosition.y = 1;
+                jumpVelocity = 0.0f;
+                cameraPosition.y = 1.0f;
                 inAir = GL_FALSE;
             }
         }
 
-        void update(float deltaTime) {
-
+        void update(const float deltaTime) {
             applyGravity(deltaTime);
         }
 
-        void processMouseMovement(float xoffset, float yoffset, GLboolean constrainPitch = true) {
+        void processMouseMovement(double xoffset, double yoffset, const GLboolean constrainPitch = true) {
 
             xoffset *= this->mouseSensitivity;
             yoffset *= this->mouseSensitivity;
 
-            yaw += xoffset;
-            pitch += yoffset;
+            yaw += static_cast<float>(xoffset);
+            pitch += static_cast<float>(yoffset);
 
             if (constrainPitch) {
                 if (pitch > 89.0f) {
@@ -131,8 +130,10 @@ class Camera {
             }
             updateCameraVectors();
         }
-        void processMouseScroll(float yoffset) {
-            zoom -= yoffset;
+
+        void processMouseScroll(const double yoffset) {
+
+            zoom -= static_cast<float>(yoffset);
             if (zoom < 1.0f) {
                 zoom = 1.0f;
             }

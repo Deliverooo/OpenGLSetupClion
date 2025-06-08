@@ -12,7 +12,6 @@
 struct aiMaterial;
 
 using namespace std;
-std::vector<Texture> loadedTextures;
 
 class Model {
     public:
@@ -33,7 +32,7 @@ class Model {
 
     private:
 
-        GLuint loadTexture(const char* path, const std::string &directory) {
+        static GLuint loadTexture(const char* path, const std::string &directory) {
 
             string filename = string(path);
             filename = directory + '/' + filename;
@@ -42,9 +41,9 @@ class Model {
             glGenTextures(1, &textureID);
 
             int width, height, nrComponents;
-            unsigned char *data = stbi_load(filename.c_str(), &width, &height, &nrComponents, 0);
-            if (data)
-            {
+
+            if (unsigned char *data = stbi_load(filename.c_str(), &width, &height, &nrComponents, 0)) {
+
                 GLenum format = 0;
                 if (nrComponents == 1)
                     format = GL_RED;
@@ -74,18 +73,19 @@ class Model {
 
             return textureID;
         }
-        std::vector<Texture> loadMaterialTex(aiMaterial *material, aiTextureType type, const std::string& typeName) {
+        std::vector<Texture> loadMaterialTex(const aiMaterial *material, const aiTextureType type, const std::string &typeName) {
 
             std::vector<Texture> textures;
             for (GLuint i = 0; i < material->GetTextureCount(type); i++) {
+
                 aiString str;
                 material->GetTexture(type, i, &str);
                 bool skip = false;
-                for (GLuint j = 0; j < loadedTextures.size(); j++) {
+                for (GLuint j = 0; j < textures_loaded.size(); j++) {
 
-                    if (std::strcmp(loadedTextures[j].path.C_Str(), str.C_Str()) == 0) {
+                    if (std::strcmp(textures_loaded[j].path.C_Str(), str.C_Str()) == 0) {
 
-                        textures.push_back(loadedTextures[j]);
+                        textures.push_back(textures_loaded[j]);
                         skip = true;
                         break;
                     }
@@ -96,12 +96,12 @@ class Model {
                     texture.type = typeName;
                     texture.path = str;
                     textures.push_back(texture);
-                    loadedTextures.push_back(texture);
+                    textures_loaded.push_back(texture);
                 }
             }
             return textures;
         }
-        Material loadMaterial(aiMaterial *mat) {
+        static Material loadMaterial(const aiMaterial *mat) {
 
             Material material;
             aiColor3D colour(0.0f, 0.0f, 0.0f);
@@ -182,7 +182,7 @@ class Model {
         }
 
         //this function takes in a node and recursively creates a mesh for each of its children, then adds it to the mesh
-        void processNode(aiNode *node, const aiScene *scene) {
+        void processNode(const aiNode *node, const aiScene *scene) {
 
             for (GLuint i = 0; i < node->mNumMeshes; i++) {
                 aiMesh *mesh = scene->mMeshes[node->mMeshes[i]];

@@ -14,52 +14,49 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 
-
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-void processInput(GLFWwindow *window);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
-void OrbitLight(glm::mat4 &light, glm::vec3 &lightPos, const glm::vec3 &pivotPos, float radius, const int offsetMultiplier);
+void processInput(GLFWwindow *window);
+
+void OrbitLight(glm::mat4 &light, glm::vec3 &lightPos, const glm::vec3 &pivotPos, float radius, int offsetMultiplier);
+
 void uploadPointLightUniforms(Shader &shader, int index, glm::vec3 &lightPos, float ambientStrength, glm::vec3 lightColour,
     float constant, float linear, float quadratic);
-void createSpotLight(Shader &shader, const int index, glm::vec3 &lightPos, glm::vec3 &lightDirection, float ambientStrength, glm::vec3 lightColour,
+
+void createSpotLight(const Shader &shader, int index, glm::vec3 &lightPos, glm::vec3 &lightDirection, float ambientStrength, glm::vec3 lightColour,
     float cutOffAngle, float outerCutOffAngle, float constant, float linear, float quadratic);
+
 void uploadDirectionLightUniforms(Shader &shader, const glm::vec3 &direction, float ambientStrength, glm::vec3 lightColour);
-void uploadLightUniforms(Shader &shader, const int index, glm::vec3 &lightPos, glm::vec3 lightColour, float linear, float quadratic);
 
-GLuint loadCubemapTextures(std::vector<std::string> faces);
+void uploadLightUniforms(const Shader &shader, int index, const glm::vec3 &lightPos, glm::vec3 lightColour,
+    float linear, float quadratic);
 
+GLuint loadCubemapTextures(const std::vector<std::string> &faces);
 
 #define log(x) std::cout << x << std::endl
-#define constexpr GLuint WIDTH = 1920;
-constexpr GLuint HEIGHT = 1080;
+
+GLsizei WIDTH = 1920;
+GLsizei HEIGHT = 1080;
+float ASPECT_RATIO = static_cast<float>(WIDTH) / static_cast<float>(HEIGHT);
 
 typedef glm::vec3 Vector3f;
 typedef glm::mat4 Matrix4f;
 
-double deltaTime = 0.0f;
-double lastFrame = 0.0f;
-double currentFrame = 0.0f;
+double deltaTime = 0.0;
+double lastFrame = 0.0;
+double currentFrame = 0.0;
 
 float lastScroll = 0;
-float lastX = static_cast<float>(WIDTH) / 2.0f;
-float lastY = static_cast<float>(HEIGHT) / 2.0f;
+double lastX = (WIDTH) / 2.0;
+double lastY = (HEIGHT) / 2.0;
 bool firstMouse = true;
 
 bool ui_mode = false;
 
 Vector3f lightPos = glm::vec3(5.0f, 1.0f, 5.0f);
 Vector3f lightPos2 = glm::vec3(3.0f, 1.0f, 3.0f);
-
-Vector3f modelItemPos = Vector3f(0.0f, 0.0f, 1.0f);
-glm::vec3 spotLightPos = glm::vec3(2.0f, 2.0f, 0.0f);
-glm::vec3 spotLightDirection = glm::vec3(0.0f, -1.0f, 0.0f);
-
-Vector3f spotLightCol = Vector3f(0.5f);
-Vector3f spotLightCol2 = Vector3f(0.5f);
-
-glm::vec3 lightDir = glm::vec3(0.0f, -0.7f, 0.5f);
 
 glm::vec3 cacheCameraPos = glm::vec3(0.0f, 0.0f, 0.0f);
 Camera camera(cacheCameraPos);
@@ -108,7 +105,6 @@ int main()
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330");
 
-
     camera.cameraPosition = glm::vec3(0.0f, 0.0f, 0.0f);
 
     // build and compile our shader program
@@ -135,9 +131,9 @@ int main()
     glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), static_cast<void*>(nullptr));
     glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), reinterpret_cast<void *>(2 * sizeof(float)));
 
     //makes sure that the shader is currently being used
     shader_001.use();
@@ -168,7 +164,7 @@ int main()
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WIDTH, HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, WIDTH, HEIGHT, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -247,7 +243,7 @@ int main()
     glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, static_cast<void *>(nullptr));
 
     GLuint cubeMapTexture = loadCubemapTextures(cubeMapTexturePaths);
 
@@ -273,7 +269,7 @@ int main()
         processInput(window);
 
         camera.update(static_cast<float>(deltaTime));
-        glm::mat4 projection = glm::perspective(glm::radians(camera.zoom), (float) WIDTH / (float) HEIGHT, 0.1f, 100.0f);
+        glm::mat4 projection = glm::perspective(glm::radians(camera.zoom), ASPECT_RATIO, 0.1f, 100.0f);
         glm::mat4 skyView = glm::mat4(glm::mat3(camera.getViewMatrix()));
         glm::mat4 view = camera.getViewMatrix();
 
@@ -301,7 +297,7 @@ int main()
         shader_001.uploadUniformVector3f("viewPos", camera.cameraFront);
 
         uploadLightUniforms(shader_001, 0, lightPos, glm::vec3(0.7f), 0.09f, 0.032f);
-        uploadLightUniforms(shader_001, 1, spotLightPos, glm::vec3(0.7f), 0.09f, 0.032f);
+        uploadLightUniforms(shader_001, 1, lightPos2, glm::vec3(0.7f), 0.09f, 0.032f);
 
         if (in_hand && glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS) {
             in_hand = false;
@@ -346,7 +342,7 @@ int main()
         }
 
         if (item != ORBO) {
-            npcOrboTransform.rotation.y += deltaTime;
+            npcOrboTransform.rotation.y += static_cast<float>(deltaTime);
         }
 
         if (glfwGetKey(window, GLFW_KEY_E) == GLFW_RELEASE) {
@@ -360,7 +356,7 @@ int main()
         orboModelMat = glm::rotate(orboModelMat, orbotransform.rotation.x, orbotransform.rotation);
         orboModelMat = glm::rotate(orboModelMat, orbotransform.rotation.y, orbotransform.rotation);
         orboModelMat = glm::rotate(orboModelMat, orbotransform.rotation.z, orbotransform.rotation);
-        shader_001.setFloat("shininess", 32);
+        shader_001.uploadUniformFloat("shininess", 32);
         shader_001.uploadUniformMatrix4f("model", orboModelMat);
         orboModel.draw(shader_001);
 
@@ -368,7 +364,7 @@ int main()
         ballModelMat = glm::translate(ballModelMat, ballTransform.position);
         ballModelMat = glm::scale(ballModelMat, ballTransform.scale);
         ballModelMat = glm::rotate(ballModelMat, 1.0f, ballTransform.rotation);
-        shader_001.setFloat("shininess", 16);
+        shader_001.uploadUniformFloat("shininess", 16);
         shader_001.uploadUniformMatrix4f("model", ballModelMat);
         ballModel.draw(shader_001);
 
@@ -376,7 +372,7 @@ int main()
         vecModelMat = glm::translate(vecModelMat, vecTransform.position);
         vecModelMat = glm::scale(vecModelMat, vecTransform.scale);
         vecModelMat = glm::rotate(vecModelMat, 1.0f, vecTransform.rotation);
-        shader_001.setFloat("shininess", 4);
+        shader_001.uploadUniformFloat("shininess", 4);
         shader_001.uploadUniformMatrix4f("model", vecModelMat);
         vecModel.draw(shader_001);
 
@@ -384,7 +380,7 @@ int main()
         floorModelMat = glm::translate(floorModelMat, floortransform.position);
         floorModelMat = glm::scale(floorModelMat, floortransform.scale);
         floorModelMat = glm::rotate(floorModelMat, 1.0f, floortransform.rotation);
-        shader_001.setFloat("shininess", 64);
+        shader_001.uploadUniformFloat("shininess", 64);
         shader_001.uploadUniformMatrix4f("model", floorModelMat);
         floorTiles.draw(shader_001);
 
@@ -392,7 +388,7 @@ int main()
         trebModelMat = glm::translate(trebModelMat, trebTransform.position);
         trebModelMat = glm::scale(trebModelMat, trebTransform.scale);
         trebModelMat = glm::rotate(trebModelMat, 1.0f, trebTransform.rotation);
-        shader_001.setFloat("shininess", 4);
+        shader_001.uploadUniformFloat("shininess", 4);
         shader_001.uploadUniformMatrix4f("model", trebModelMat);
         trebModel.draw(shader_001);
 
@@ -400,7 +396,7 @@ int main()
         pcModelMat = glm::translate(pcModelMat, pcTransform.position);
         pcModelMat = glm::scale(pcModelMat, pcTransform.scale);
         pcModelMat = glm::rotate(pcModelMat, 1.0f, pcTransform.rotation);
-        shader_001.setFloat("shininess", 32);
+        shader_001.uploadUniformFloat("shininess", 32);
         shader_001.uploadUniformMatrix4f("model", pcModelMat);
         pcModel.draw(shader_001);
 
@@ -410,7 +406,7 @@ int main()
         npcOrboModelMat = glm::rotate(npcOrboModelMat, npcOrboTransform.rotation.x, npcOrboTransform.rotation);
         npcOrboModelMat = glm::rotate(npcOrboModelMat, npcOrboTransform.rotation.y, npcOrboTransform.rotation);
         npcOrboModelMat = glm::rotate(npcOrboModelMat, npcOrboTransform.rotation.z, npcOrboTransform.rotation);
-        shader_001.setFloat("shininess", 64);
+        shader_001.uploadUniformFloat("shininess", 64);
         shader_001.uploadUniformMatrix4f("model", npcOrboModelMat);
         orboModel.draw(shader_001);
 
@@ -418,7 +414,7 @@ int main()
         terrainModelMat = glm::translate(terrainModelMat, terrainTransform.position);
         terrainModelMat = glm::scale(terrainModelMat, terrainTransform.scale);
         terrainModelMat = glm::rotate(terrainModelMat, 1.0f, terrainTransform.rotation);
-        shader_001.setFloat("shininess", 4);
+        shader_001.uploadUniformFloat("shininess", 4);
         shader_001.uploadUniformMatrix4f("model", terrainModelMat);
         terrainModel.draw(shader_001);
 
@@ -430,8 +426,8 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT);
 
         screenShader.use();
-        screenShader.setFloat("time", (float)glfwGetTime());
-        screenShader.setFloat("distance", glm::distance(npcOrboTransform.position, camera.cameraPosition));
+        screenShader.uploadUniformFloat("time", (float)glfwGetTime());
+        screenShader.uploadUniformFloat("distance", glm::distance(npcOrboTransform.position, camera.cameraPosition));
         log(1/glm::distance(npcOrboTransform.position, camera.cameraPosition));
         glBindVertexArray(quadVAO);
         glBindTexture(GL_TEXTURE_2D, texture);	// use the colour attachment texture as the texture of the quad plane
@@ -469,14 +465,7 @@ int main()
 // process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
 void processInput(GLFWwindow *window)
 {
-    if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS && ui_mode == false) {
-        ui_mode = true;
-    } else if (glfwGetKey(window, GLFW_KEY_I) == GLFW_PRESS && ui_mode == true) {
-        ui_mode = false;
-    }
     if (!ui_mode) {
-        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
         if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
             camera.processKeyboard(FORWARD, deltaTime);
         }
@@ -492,22 +481,25 @@ void processInput(GLFWwindow *window)
         if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
             camera.processKeyboard(JUMP, deltaTime);
         }
-    } else {
-        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-        log("in ui mode");
-    }
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-        glfwSetWindowShouldClose(window, true);
-    }
-
-    if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) {
-        std::cout << "printing" << std::endl;
     }
 }
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
 
-    log("key_callback");
+    if (key == GLFW_KEY_I && action == GLFW_PRESS && ui_mode == false) {
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        ui_mode = true;
+        log("ui mode");
+
+    } else if (key == GLFW_KEY_I && action == GLFW_PRESS && ui_mode == true) {
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        ui_mode = false;
+        log("not ui mode");
+    }
+
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+        glfwSetWindowShouldClose(window, true);
+    }
 
 }
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
@@ -525,8 +517,8 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos) {
         lastY = ypos;
         firstMouse = false;
     }
-    float mouseDx = (float)xpos - lastX;
-    float mouseDy = (float)lastY - ypos;
+    double mouseDx = xpos - lastX;
+    double mouseDy = lastY - ypos;
     lastX = xpos;
     lastY = ypos;
 
@@ -538,11 +530,11 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
     camera.processMouseScroll(yoffset);
 }
-void OrbitLight(glm::mat4 &light, glm::vec3 &lightPos, const glm::vec3 &pivotPos, const float radius, const int offsetMultiplier) {
+void OrbitLight(glm::mat4 &light, glm::vec3 &lightPos, const glm::vec3 &pivotPos, const float radius, const float offsetMultiplier) {
 
-    float dX = pivotPos.x + offsetMultiplier * ((sin(glfwGetTime()) * radius));
-    float dY = pivotPos.y + offsetMultiplier * (sin(glfwGetTime()) * radius / 8.0f);
-    float dZ = pivotPos.z + offsetMultiplier * (cos(glfwGetTime()) * radius);
+    const float dX = pivotPos.x + offsetMultiplier * static_cast<float>((sin(glfwGetTime()) * radius));
+    const float dY = pivotPos.y + offsetMultiplier * static_cast<float>(sin(glfwGetTime()) * radius / 8.0f);
+    const float dZ = pivotPos.z + offsetMultiplier * static_cast<float>(cos(glfwGetTime()) * radius);
 
     lightPos.x = dX;
     lightPos.y = dY;
@@ -551,61 +543,59 @@ void OrbitLight(glm::mat4 &light, glm::vec3 &lightPos, const glm::vec3 &pivotPos
     light = glm::translate(light, lightPos);
     light = glm::scale(light, glm::vec3(0.35f));
 }
-void createSpotLight(Shader &shader, const int index, glm::vec3 &lightPos, glm::vec3 &lightDirection, float ambientStrength, glm::vec3 lightColour,
-    float cutOffAngle, float outerCutOffAngle, float constant, float linear, float quadratic) {
+void createSpotLight(const Shader &shader, const int index, const glm::vec3 &lightPos, const glm::vec3 &lightDirection,
+    const float ambientStrength, const glm::vec3 lightColour, const float cutOffAngle, const float outerCutOffAngle,
+    const float linear, const float quadratic) {
 
     shader.uploadUniformVector3f("spotlights[" + std::to_string(index) + "].parentLight.position", lightPos);
     shader.uploadUniformVector3f("spotlights[" + std::to_string(index) + "].direction", lightDirection);
-    shader.setFloat("spotlights[" + std::to_string(index) + "].parentLight.ambientStrength", ambientStrength);
+    shader.uploadUniformFloat("spotlights[" + std::to_string(index) + "].parentLight.ambientStrength", ambientStrength);
     shader.uploadUniformVector3f("spotlights[" + std::to_string(index) + "].parentLight.colour", lightColour);
-    shader.setFloat("spotlights[" + std::to_string(index) + "].cutOffAngle", cutOffAngle);
-    shader.setFloat("spotlights[" + std::to_string(index) + "].outerCutOffAngle", outerCutOffAngle);
-    shader.setFloat("spotlights[" + std::to_string(index) + "].attenuation.constant", constant);
-    shader.setFloat("spotlights[" + std::to_string(index) + "].attenuation.linear", linear);
-    shader.setFloat("spotlights[" + std::to_string(index) + "].attenuation.quadratic", quadratic);
+    shader.uploadUniformFloat("spotlights[" + std::to_string(index) + "].cutOffAngle", cutOffAngle);
+    shader.uploadUniformFloat("spotlights[" + std::to_string(index) + "].outerCutOffAngle", outerCutOffAngle);
+    shader.uploadUniformFloat("spotlights[" + std::to_string(index) + "].attenuation.linear", linear);
+    shader.uploadUniformFloat("spotlights[" + std::to_string(index) + "].attenuation.quadratic", quadratic);
 }
-void uploadPointLightUniforms(Shader &shader, const int index, Vector3f &lightPos, float ambientStrength, Vector3f lightColour,
-    float constant, float linear, float quadratic) {
+void uploadPointLightUniforms(const Shader &shader, const int index, const Vector3f &lightPos, const float ambientStrength,
+    const Vector3f lightColour, const float linear, const float quadratic) {
 
     shader.uploadUniformVector3f("pointLights[" + std::to_string(index) + "].parentLight.position", lightPos);
     shader.uploadUniformVector3f("pointLights[" + std::to_string(index) + "].parentLight.colour", lightColour);
-    shader.setFloat("pointLights[" + std::to_string(index) + "].parentLight.ambientStrength", ambientStrength);
-    shader.setFloat("pointLights[" + std::to_string(index) + "].attenuation.constant", constant);
-    shader.setFloat("pointLights[" + std::to_string(index) + "].attenuation.linear", linear);
-    shader.setFloat("pointLights[" + std::to_string(index) + "].attenuation.quadratic", quadratic);
+    shader.uploadUniformFloat("pointLights[" + std::to_string(index) + "].parentLight.ambientStrength", ambientStrength);
+    shader.uploadUniformFloat("pointLights[" + std::to_string(index) + "].attenuation.linear", linear);
+    shader.uploadUniformFloat("pointLights[" + std::to_string(index) + "].attenuation.quadratic", quadratic);
 }
-void uploadLightUniforms(Shader &shader, const int index, glm::vec3 &lightPos, glm::vec3 lightColour, float linear, float quadratic) {
+void uploadLightUniforms(const Shader &shader, const int index, const glm::vec3 &lightPos, const glm::vec3 lightColour,
+    const float linear, const float quadratic) {
 
     shader.uploadUniformVector3f("lights[" + std::to_string(index) + "].position", lightPos);
     shader.uploadUniformVector3f("lights[" + std::to_string(index) + "].colour", lightColour);
-    shader.setFloat("lights[" + std::to_string(index) + "].linear", linear);
-    shader.setFloat("lights[" + std::to_string(index) + "].quadratic", quadratic);
+    shader.uploadUniformFloat("lights[" + std::to_string(index) + "].linear", linear);
+    shader.uploadUniformFloat("lights[" + std::to_string(index) + "].quadratic", quadratic);
 }
 
-void uploadDirectionLightUniforms(Shader &shader, const glm::vec3 &direction, float ambientStrength, glm::vec3 lightColour) {
+void uploadDirectionLightUniforms(const Shader &shader, const glm::vec3 &direction, const float ambientStrength,
+    const glm::vec3 lightColour) {
 
     shader.uploadUniformVector3f("directionLight.direction", direction);
     shader.uploadUniformVector3f("directionLight.parentLight.colour", lightColour);
-    shader.setFloat("directionLight.parentLight.ambientStrength", ambientStrength);
+    shader.uploadUniformFloat("directionLight.parentLight.ambientStrength", ambientStrength);
 
 }
-GLuint loadCubemapTextures(std::vector<std::string> faces) {
+GLuint loadCubemapTextures(const std::vector<std::string> &faces) {
 
     unsigned int textureID;
     glGenTextures(1, &textureID);
     glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
 
     int width, height, nrComponents;
-    for (unsigned int i = 0; i < faces.size(); i++)
-    {
-        unsigned char *data = stbi_load(faces[i].c_str(), &width, &height, &nrComponents, 0);
-        if (data)
-        {
+    for (unsigned int i = 0; i < faces.size(); i++) {
+        if (unsigned char *data = stbi_load(faces[i].c_str(), &width, &height, &nrComponents, 0)) {
+
             glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
             stbi_image_free(data);
         }
-        else
-        {
+        else {
             std::cout << "Cubemap texture failed to load at path: " << faces[i] << std::endl;
             stbi_image_free(data);
         }
