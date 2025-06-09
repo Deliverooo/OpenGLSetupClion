@@ -6,7 +6,7 @@
 #define MESH_H
 
 struct Texture {
-    GLuint id;
+    unsigned int id;
     std::string type;
     aiString path;
 };
@@ -29,13 +29,13 @@ class Mesh {
     public:
 
         std::vector<Vertex> vertices;
-        std::vector<GLuint> indices;
+        std::vector<unsigned int> indices;
         std::vector<Texture> textures;
         Material material;
 
         GLuint VAO;
 
-        Mesh(std::vector<Vertex> &vertices, std::vector<GLuint> &indices, std::vector<Texture> textures) {
+        Mesh(const std::vector<Vertex> &vertices, const std::vector<unsigned int> &indices, const std::vector<Texture> &textures) {
             this->vertices = vertices;
             this->indices = indices;
             this->textures = textures;
@@ -43,14 +43,14 @@ class Mesh {
             prepareMesh();
         }
 
-        void draw(Shader &shader) {
+        void draw(const Shader &shader) const {
 
             GLuint diffuseNr = 1;
             GLuint specularNr = 1;
             GLuint normalNr = 1;
             GLuint heightNr = 1;
 
-            for (GLuint i = 0; i < textures.size(); i++) {
+            for (unsigned int i = 0; i < textures.size(); i++) {
                 glActiveTexture(GL_TEXTURE0 + i);
 
                 std::string num;
@@ -72,13 +72,13 @@ class Mesh {
             }
 
             glBindVertexArray(VAO);
-            glDrawElements(GL_TRIANGLES, static_cast<unsigned int>(indices.size()), GL_UNSIGNED_INT, 0);
+            glDrawElements(GL_TRIANGLES, static_cast<unsigned int>(indices.size()), GL_UNSIGNED_INT, nullptr);
             glBindVertexArray(0);
             glActiveTexture(GL_TEXTURE0);
         }
 
     private:
-        GLuint vboID, eboID;
+        unsigned int vboID, eboID;
 
         void prepareMesh() {
             //generates the vertex arrays and buffers
@@ -101,13 +101,13 @@ class Mesh {
             // the pointer is the offset for each attribute from the previous one
             // position attribute
             glEnableVertexAttribArray(0);
-            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), static_cast<void *>(nullptr));
             //normals attribute
             glEnableVertexAttribArray(1);
-            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, Normal));
+            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void *>(offsetof(Vertex, Normal)));
             //texture coordinates attribute
             glEnableVertexAttribArray(2);
-            glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, TexCoords));
+            glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void *>(offsetof(Vertex, TexCoords)));
 
             // You can unbind the VAO afterward so other VAO calls won't accidentally modify this VAO, but this rarely happens. Modifying other
             // VAOs requires a call to glBindVertexArray anyway so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.

@@ -46,5 +46,5 @@ void main()
     if(dist == 0.1f){
         dist == 0.0f;
     }
-    FragColour = vec4(mix(vec3(texCol), vec3(col), 0.0f), 1.0f);
+    FragColour = vec4(vec3(texCol), 1.0f);
 }

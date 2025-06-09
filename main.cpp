@@ -61,6 +61,16 @@ Vector3f lightPos2 = glm::vec3(3.0f, 1.0f, 3.0f);
 glm::vec3 cacheCameraPos = glm::vec3(0.0f, 0.0f, 0.0f);
 Camera camera(cacheCameraPos);
 
+enum heldItem {
+    NONE,
+    ORBO,
+    VECTOR,
+    BALL
+};
+
+bool in_hand = false;
+heldItem item = NONE;
+
 int main()
 {
     // glfw: initialize and configure
@@ -155,7 +165,6 @@ int main()
     Transform orbotransform(glm::vec3(2.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
     Transform floortransform(glm::vec3(0.0f, -0.5f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
 
-
     GLuint fbo;
     glGenFramebuffers(1, &fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
@@ -249,16 +258,6 @@ int main()
 
     glEnable(GL_CULL_FACE);
 
-    enum heldItem {
-        NONE,
-        ORBO,
-        VECTOR,
-        BALL
-    };
-
-    bool in_hand = false;
-    heldItem item = NONE;
-
     glEnable(GL_MULTISAMPLE);
     glEnable(GL_BLEND);
 
@@ -273,7 +272,8 @@ int main()
         glm::mat4 skyView = glm::mat4(glm::mat3(camera.getViewMatrix()));
         glm::mat4 view = camera.getViewMatrix();
 
-        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+        // glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+
         glEnable(GL_DEPTH_TEST);
         glClearColor(0.0f, 0.11f, 0.21f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -356,7 +356,7 @@ int main()
         orboModelMat = glm::rotate(orboModelMat, orbotransform.rotation.x, orbotransform.rotation);
         orboModelMat = glm::rotate(orboModelMat, orbotransform.rotation.y, orbotransform.rotation);
         orboModelMat = glm::rotate(orboModelMat, orbotransform.rotation.z, orbotransform.rotation);
-        shader_001.uploadUniformFloat("shininess", 32);
+        shader_001.uploadUniformFloat("shininess", 16);
         shader_001.uploadUniformMatrix4f("model", orboModelMat);
         orboModel.draw(shader_001);
 
@@ -380,7 +380,7 @@ int main()
         floorModelMat = glm::translate(floorModelMat, floortransform.position);
         floorModelMat = glm::scale(floorModelMat, floortransform.scale);
         floorModelMat = glm::rotate(floorModelMat, 1.0f, floortransform.rotation);
-        shader_001.uploadUniformFloat("shininess", 64);
+        shader_001.uploadUniformFloat("shininess", 32);
         shader_001.uploadUniformMatrix4f("model", floorModelMat);
         floorTiles.draw(shader_001);
 
@@ -417,21 +417,20 @@ int main()
         shader_001.uploadUniformFloat("shininess", 4);
         shader_001.uploadUniformMatrix4f("model", terrainModelMat);
         terrainModel.draw(shader_001);
-
-        // now bind back to default framebuffer and draw a quad plane with the attached framebuffer colour texture
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glDisable(GL_DEPTH_TEST); // disable depth test so screen-space quad isn't discarded due to depth test.
-        // clear all relevant buffers
-        glClearColor(1.0f, 1.0f, 1.0f, 1.0f); // set clear colour to white (not really necessary actually, since we won't be able to see behind the quad anyways)
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        screenShader.use();
-        screenShader.uploadUniformFloat("time", (float)glfwGetTime());
-        screenShader.uploadUniformFloat("distance", glm::distance(npcOrboTransform.position, camera.cameraPosition));
-        log(1/glm::distance(npcOrboTransform.position, camera.cameraPosition));
-        glBindVertexArray(quadVAO);
-        glBindTexture(GL_TEXTURE_2D, texture);	// use the colour attachment texture as the texture of the quad plane
-        glDrawArrays(GL_TRIANGLES, 0, 6);
+        //
+        // // now bind back to default framebuffer and draw a quad plane with the attached framebuffer colour texture
+        // glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        // glDisable(GL_DEPTH_TEST); // disable depth test so screen-space quad isn't discarded due to depth test.
+        // // clear all relevant buffers
+        // glClearColor(1.0f, 1.0f, 1.0f, 1.0f); // set clear colour to white (not really necessary actually, since we won't be able to see behind the quad anyways)
+        // glClear(GL_COLOR_BUFFER_BIT);
+        //
+        // screenShader.use();
+        // screenShader.uploadUniformFloat("time", (float)glfwGetTime());
+        // screenShader.uploadUniformFloat("distance", glm::distance(npcOrboTransform.position, camera.cameraPosition));
+        // glBindVertexArray(quadVAO);
+        // glBindTexture(GL_TEXTURE_2D, texture);	// use the colour attachment texture as the texture of the quad plane
+        // glDrawArrays(GL_TRIANGLES, 0, 6);
 
         ImGui::Begin("Hello ImGui!");
         ImGui::Text("This is text!");

@@ -81,7 +81,7 @@ class Model {
                 aiString str;
                 material->GetTexture(type, i, &str);
                 bool skip = false;
-                for (GLuint j = 0; j < textures_loaded.size(); j++) {
+                for (unsigned int j = 0; j < textures_loaded.size(); j++) {
 
                     if (std::strcmp(textures_loaded[j].path.C_Str(), str.C_Str()) == 0) {
 
@@ -126,10 +126,10 @@ class Model {
 
             //for the input mesh, it will create a list of vertices, indies and textures for it
             std::vector<Vertex> vertices;
-            std::vector<GLuint> indices;
+            std::vector<unsigned int> indices;
             std::vector<Texture> textures;
 
-            for (GLuint i = 0; i < mesh->mNumVertices; i++) {
+            for (unsigned int i = 0; i < mesh->mNumVertices; i++) {
                 Vertex vertex;
 
                 glm::vec3 vector;
@@ -155,7 +155,7 @@ class Model {
                 vertices.push_back(vertex);
             }
 
-            for (GLuint i = 0; i < mesh->mNumFaces; i++) {
+            for (unsigned int i = 0; i < mesh->mNumFaces; i++) {
 
                 aiFace face = mesh->mFaces[i];
                 for (int j = 0; j < face.mNumIndices; j++) {
